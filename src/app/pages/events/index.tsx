@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   ChevronDown, ChevronLeft, ChevronRight, X, Play,
   Eye, MoreHorizontal, Download, Search, SlidersHorizontal,
@@ -573,13 +573,6 @@ export default function EventsPage() {
 
   return (
     <div className="p-4">
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-4 pb-3">
-        <div>
-          <div className="text-[20px] font-bold uppercase tracking-[0.08em] text-slate-900">Sự kiện</div>
-        </div>
-      </div>
-
       {/* Filter bar */}
       <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-3 mb-4">
         <div className="flex items-center gap-2">

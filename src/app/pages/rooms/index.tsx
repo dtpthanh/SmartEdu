@@ -232,13 +232,6 @@ export default function RoomsPage() {
 
   return (
     <div className="p-4">
-      {/* Page header card */}
-      <div className="flex items-center justify-between mb-4 pb-3">
-        <div>
-          <div className="text-[20px] font-bold uppercase tracking-[0.08em] text-slate-900">Phòng học</div>
-        </div>
-      </div>
-
       {/* Stats */}
       <div className="grid grid-cols-5 gap-3 mb-4">
         {stats.map(s => (
@@ -283,4 +276,6 @@ export default function RoomsPage() {
     </div>
   );
 }
+
+
 

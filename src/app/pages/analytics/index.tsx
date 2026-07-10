@@ -61,8 +61,8 @@ const TOP_STUDENTS = [
 ];
 const SUGGESTIONS = [
   { icon:<Users size={18}/>,      bg:"bg-blue-100",   color:"text-blue-600",  title:"Tăng cường tương tác",      desc:"Khuyến khích đặt câu hỏi, thảo luận để duy trì sự tập trung." },
-  { icon:<Volume2 size={18}/>,    bg:"bg-orange-100", color:"text-orange-500", title:"Kiểm soát Âm lượng lớp",   desc:"Giảm tiếng ồn để tạo môi trường học tập tốt hơn." },
-  { icon:<MessageCircle size={18}/>, bg:"bg-yellow-100",color:"text-yellow-600",title:"Quan tÂm nhóm học sinh", desc:"Nhóm bàn 4 có dấu hiệu nói chuyện riêng nhiều." },
+  { icon:<Volume2 size={18}/>,    bg:"bg-orange-100", color:"text-orange-500", title:"Kiểm soát âm lượng lớp",   desc:"Giảm tiếng ồn để tạo môi trường học tập tốt hơn." },
+  { icon:<MessageCircle size={18}/>, bg:"bg-yellow-100",color:"text-yellow-600",title:"Quan tâm nhóm học sinh", desc:"Nhóm bàn 4 có dấu hiệu nói chuyện riêng nhiều." },
   { icon:<HandMetal size={18}/>,  bg:"bg-green-100",  color:"text-green-600",  title:"Phát huy học sinh tích cực", desc:"Tạo cơ hội cho học sinh giơ tay phát biểu." },
 ];
 
@@ -221,7 +221,7 @@ function Heatmap() {
       </div>
       {/* Legend */}
       <div className="flex items-center gap-3 mt-3 justify-center text-[10px] text-gray-500">
-        {[["#34A853","Tốt"],["#FBBC05","TB"],["#ef4444","KÂm"],["#e2e8f0","N/A"]].map(([c,l])=>(
+        {[["#34A853","Tốt"],["#FBBC05","TB"],["#ef4444","Kém"],["#e2e8f0","N/A"]].map(([c,l])=>(
           <span key={l} className="flex items-center gap-1">
             <span className="w-3 h-3 rounded-full inline-block" style={{backgroundColor:c}}/>
             {l}
@@ -237,7 +237,7 @@ function Heatmap() {
 // ══════════════════════════════════════════════════════════════════════════════
 export default function AnalyticsPage() {
   const stats = [
-    { icon:<Activity size={18}/>,    bg:"bg-blue-50",   color:"text-blue-500",   label:"Mức độ tập trung TB",  val:"82%",    sub:null,    badge:null,          trend:"+12%", trendSub:"So với hÂm qua" },
+    { icon:<Activity size={18}/>,    bg:"bg-blue-50",   color:"text-blue-500",   label:"Mức độ tập trung TB",  val:"82%",    sub:null,    badge:null,          trend:"+12%", trendSub:"So với hôm qua" },
     { icon:<Volume2 size={18}/>,     bg:"bg-orange-50", color:"text-orange-500", label:"Mức độ ồn trung bình", val:"45 dB",  sub:"Ngưỡng: < 60 dB", badge:"Trung bình", trend:null, trendSub:null },
     { icon:<Clock size={18}/>,       bg:"bg-teal-50",   color:"text-teal-500",   label:"Thời gian GV giảng",   val:"68%",    sub:"41 phát · Tổng thời gian lớp học", badge:null, trend:null, trendSub:null },
     { icon:<HandMetal size={18}/>,   bg:"bg-purple-50", color:"text-purple-500", label:"Học sinh giơ tay",     val:"12",     sub:"Tổng số lần", badge:null, trend:null, trendSub:null },
@@ -246,13 +246,6 @@ export default function AnalyticsPage() {
 
   return (
     <div className="p-4">
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-4 pb-3">
-        <div>
-          <div className="text-[20px] font-bold uppercase tracking-[0.08em] text-slate-900">AI Analytics</div>
-        </div>
-      </div>
-
       {/* Sub-filter bar */}
       <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm px-4 py-3 mb-4 flex items-center gap-3">
         <div className="flex flex-col gap-0.5">
@@ -264,7 +257,7 @@ export default function AnalyticsPage() {
         <div className="flex flex-col gap-0.5">
           <div className="text-[10px] text-gray-400">Thời gian</div>
           <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-gray-700 hover:bg-gray-50">
-            HÂm nay <ChevronDown size={11} className="text-gray-400"/>
+            Hôm nay <ChevronDown size={11} className="text-gray-400"/>
           </button>
         </div>
         <div className="flex flex-col gap-0.5">
@@ -325,7 +318,7 @@ export default function AnalyticsPage() {
           </div>
           <AttentionChart/>
           <div className="flex items-center gap-3 mt-1.5 text-[10px] text-gray-500">
-            {[["#34A853","Tốt (80–100%)"],["#FBBC05","Trung bình (50–79%)"],["#ef4444","KÂm (<50%)"],["#d1d5db","Không phát hiện"]].map(([c,l])=>(
+            {[["#34A853","Tốt (80–100%)"],["#FBBC05","Trung bình (50–79%)"],["#ef4444","Kém (<50%)"],["#d1d5db","Không phát hiện"]].map(([c,l])=>(
               <span key={l} className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{backgroundColor:c}}/>{l}</span>
             ))}
           </div>
@@ -444,8 +437,8 @@ export default function AnalyticsPage() {
               <div className="text-[12px] font-bold text-gray-800 mb-2">Nhận định của AI</div>
               <p className="text-[12px] text-gray-600 leading-relaxed">
                 AI nhận thấy mức độ tập trung của lớp ở mức tốt trong phần đầu buổi học.
-                Tuy nhiên, có sự giảm nhẹ vào thời điểm 11:00–12:00 kÂm theo mức ồn tăng cao.
-                Nên tăng cường tương tác và kiểm soát Âm lượng để duy trì sự tập trung.
+                Tuy nhiên, có sự giảm nhẹ vào thời điểm 11:00–12:00 khi mức ồn tăng cao.
+                Nên tăng cường tương tác và kiểm soát âm lượng để duy trì sự tập trung.
               </p>
               <button className="flex items-center gap-1.5 text-[12px] text-blue-500 hover:underline mt-2">
                 Xem chi tiết phân tích <ArrowRight size={12}/>

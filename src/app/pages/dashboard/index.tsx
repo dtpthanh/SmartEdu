@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   ChevronLeft, ChevronRight, ArrowRight, ArrowUpRight,
   School, Activity, Wrench, Wifi, AlertTriangle,
@@ -321,12 +321,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-full bg-white p-4">
-      <div className="mb-4 flex items-center justify-between pb-3">
-        <div>
-          <div className="text-[20px] font-bold uppercase tracking-[0.08em] text-slate-900">Dashboard</div>
-        </div>
-      </div>
-
       <div className="mb-4 grid grid-cols-5 gap-3">
         {stats.map((s, index) => (
           <div

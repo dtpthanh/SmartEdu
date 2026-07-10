@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Activity, AlertCircle, ChevronDown, Map, Monitor, RadioTower, School, Search, Target, TriangleAlert, WifiOff, Wrench } from "lucide-react";
 import { CAMERAS, CLASSROOMS } from "../../data/cameras";
 import { StatCard } from "../../components/StatCard";
@@ -33,20 +33,47 @@ const CLASSROOM_STATUS_OPTIONS: { id: ClassroomStatus; label: string }[] = [
 
 
 function getCameraFilterClass(optionId: CameraStatus, active: boolean) {
-  if (!active) return "border border-transparent bg-stone-100 text-slate-600 hover:bg-stone-200";
-  if (optionId === "live") return "border border-emerald-500 bg-emerald-950/[0.06] text-emerald-900 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.12)]";
-  if (optionId === "loi") return "border border-rose-500 bg-rose-950/[0.06] text-rose-900 shadow-[inset_0_0_0_1px_rgba(244,63,94,0.12)]";
-  if (optionId === "baotri") return "border border-amber-500 bg-amber-950/[0.06] text-amber-900 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.12)]";
-  if (optionId === "offline") return "border border-slate-500 bg-slate-200/80 text-slate-800";
-  return "border border-slate-700 bg-slate-800 text-white shadow-sm shadow-slate-300/50";
+  if (!active) {
+    return "border border-transparent bg-stone-100 text-slate-600 hover:bg-stone-200 dark:bg-slate-800/90 dark:text-white/80 dark:hover:bg-slate-700/90 dark:hover:text-white";
+  }
+
+  if (optionId === "live") {
+    return "border border-emerald-500 bg-emerald-950/[0.06] text-emerald-900 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.12)] dark:border-emerald-400/70 dark:bg-[linear-gradient(135deg,rgba(16,185,129,0.3)_0%,rgba(6,95,70,0.4)_100%)] dark:text-white dark:shadow-[0_14px_30px_rgba(16,185,129,0.28)]";
+  }
+
+  if (optionId === "loi") {
+    return "border border-rose-500 bg-rose-950/[0.06] text-rose-900 shadow-[inset_0_0_0_1px_rgba(244,63,94,0.12)] dark:border-rose-400/70 dark:bg-[linear-gradient(135deg,rgba(244,63,94,0.3)_0%,rgba(127,29,29,0.42)_100%)] dark:text-white dark:shadow-[0_14px_30px_rgba(244,63,94,0.28)]";
+  }
+
+  if (optionId === "baotri") {
+    return "border border-amber-500 bg-amber-950/[0.06] text-amber-900 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.12)] dark:border-amber-300/70 dark:bg-[linear-gradient(135deg,rgba(245,158,11,0.34)_0%,rgba(146,64,14,0.42)_100%)] dark:text-white dark:shadow-[0_14px_30px_rgba(245,158,11,0.24)]";
+  }
+
+  if (optionId === "offline") {
+    return "border border-slate-500 bg-slate-200/80 text-slate-800 dark:border-slate-300/55 dark:bg-[linear-gradient(135deg,rgba(100,116,139,0.34)_0%,rgba(30,41,59,0.5)_100%)] dark:text-white dark:shadow-[0_14px_30px_rgba(51,65,85,0.26)]";
+  }
+
+  return "border border-slate-700 bg-slate-800 text-white shadow-sm shadow-slate-300/50 dark:border-white/80 dark:bg-[#ffffff] dark:text-slate-900 dark:shadow-[0_14px_30px_rgba(255,255,255,0.22)]";
 }
 
 function getClassroomFilterClass(optionId: ClassroomStatus, active: boolean) {
-  if (!active) return "border border-transparent bg-slate-100 text-slate-600 hover:bg-slate-200";
-  if (optionId === "sansang") return "border border-amber-500 bg-amber-50 text-amber-900 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.12)]";
-  if (optionId === "danghoc") return "border border-emerald-500 bg-emerald-50 text-emerald-900 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.12)]";
-  if (optionId === "khonghoatdong") return "border border-slate-500 bg-slate-200/80 text-slate-800";
-  return "border border-slate-700 bg-slate-800 text-white shadow-sm shadow-slate-300/50";
+  if (!active) {
+    return "border border-transparent bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800/90 dark:text-white/80 dark:hover:bg-slate-700/90 dark:hover:text-white";
+  }
+
+  if (optionId === "sansang") {
+    return "border border-amber-500 bg-amber-50 text-amber-900 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.12)] dark:border-amber-300/70 dark:bg-[linear-gradient(135deg,rgba(245,158,11,0.34)_0%,rgba(146,64,14,0.42)_100%)] dark:text-white dark:shadow-[0_14px_30px_rgba(245,158,11,0.24)]";
+  }
+
+  if (optionId === "danghoc") {
+    return "border border-emerald-500 bg-emerald-50 text-emerald-900 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.12)] dark:border-emerald-400/70 dark:bg-[linear-gradient(135deg,rgba(16,185,129,0.3)_0%,rgba(6,95,70,0.4)_100%)] dark:text-white dark:shadow-[0_14px_30px_rgba(16,185,129,0.28)]";
+  }
+
+  if (optionId === "khonghoatdong") {
+    return "border border-slate-500 bg-slate-200/80 text-slate-800 dark:border-slate-300/55 dark:bg-[linear-gradient(135deg,rgba(100,116,139,0.34)_0%,rgba(30,41,59,0.5)_100%)] dark:text-white dark:shadow-[0_14px_30px_rgba(51,65,85,0.26)]";
+  }
+
+  return "border border-slate-700 bg-slate-800 text-white shadow-sm shadow-slate-300/50 dark:border-blue-400/55 dark:bg-[linear-gradient(135deg,rgba(59,130,246,0.32)_0%,rgba(30,64,175,0.42)_100%)] dark:text-white dark:shadow-[0_14px_30px_rgba(37,99,235,0.24)]";
 }
 function PageHeader({ tab, setTab }: { tab: TabType; setTab: (t: TabType) => void }) {
   const tabs: { id: TabType; label: string }[] = [
@@ -57,12 +84,6 @@ function PageHeader({ tab, setTab }: { tab: TabType; setTab: (t: TabType) => voi
 
   return (
     <div className="mb-4">
-      <div className="flex items-center justify-between pb-3 border-b border-gray-900/15">
-        <div>
-          <div className="text-[20px] font-bold uppercase tracking-[0.08em] text-slate-900">Camera</div>
-        </div>
-      </div>
-
       <div className="flex">
         {tabs.map(t => (
           <button

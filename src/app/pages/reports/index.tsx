@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   ChevronDown, ChevronLeft, ChevronRight, Plus, Download,
   Eye, MoreHorizontal, School, Camera, Activity, Radio,
@@ -250,13 +250,6 @@ export default function ReportsPage() {
 
   return (
     <div className="p-4">
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-4 pb-3">
-        <div>
-          <div className="text-[20px] font-bold uppercase tracking-[0.08em] text-slate-900">Báo cáo</div>
-        </div>
-      </div>
-
       {/* Filter bar */}
       <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm px-4 py-3 mb-4 flex items-center gap-2 flex-wrap">
         {[

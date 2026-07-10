@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   Server, Activity, WifiOff, TriangleAlert, Wrench, Camera, HardDrive, Download,
   Search, SlidersHorizontal, ChevronDown, Eye, Settings, MoreHorizontal,
@@ -108,13 +108,7 @@ export default function DevicesPage() {
 
   return (
     <div className="p-4">
-      {/* Page header card */}
       <div className="mb-4">
-        <div className="flex items-center justify-between pb-3 border-b border-gray-900/15">
-          <div>
-            <div className="text-[20px] font-bold uppercase tracking-[0.08em] text-slate-900">Thiết bị</div>
-          </div>
-        </div>
         <div className="flex">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}

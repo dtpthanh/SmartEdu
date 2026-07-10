@@ -8,7 +8,7 @@ import {
   FileArchive, Activity, Settings, Info, ChevronRight,
   GraduationCap, Wrench, Users, UserCheck, Phone, CalendarDays, School,
 } from "lucide-react";
-import smartEduLogo from "../../../assets/smartedu-logo.jpg";
+import smartEduLogo from "../../../assets/logo.png";
 
 type SettingsTab = "general" | "recording" | "notification" | "system";
 
@@ -853,13 +853,7 @@ export default function SettingsPage() {
 
   return (
     <div className="p-4">
-      {/* Page header */}
       <div className="mb-4">
-        <div className="flex items-center justify-between pb-3 border-b border-gray-900/15">
-          <div>
-            <div className="text-[20px] font-bold uppercase tracking-[0.08em] text-slate-900">Cài đặt</div>
-          </div>
-        </div>
         <div className="flex">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}

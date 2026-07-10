@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   ChevronDown, ChevronLeft, ChevronRight,
   Search, SlidersHorizontal, Plus, Download,
@@ -319,13 +319,7 @@ export default function UsersPage() {
 
   return (
     <div className="p-4">
-      {/* Page header */}
       <div className="mb-4">
-        <div className="flex items-center justify-between pb-3 border-b border-gray-900/15">
-          <div>
-            <div className="text-[20px] font-bold uppercase tracking-[0.08em] text-slate-900">Người dùng</div>
-          </div>
-        </div>
         {/* Tabs */}
         <div className="flex">
           {[

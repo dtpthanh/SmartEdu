@@ -255,11 +255,11 @@ export default function StreamingPage() {
       iconBg: "bg-red-50", iconColor: "text-red-500",
     },
     {
-      icon: <Calendar size={18} />, label: "Sắp diễn ra hÂm nay", val: 248, sub: "Hiện nay",
+      icon: <Calendar size={18} />, label: "Sắp diễn ra hôm nay", val: 248, sub: "Hiện nay",
       badge: null, iconBg: "bg-blue-50", iconColor: "text-blue-500",
     },
     {
-      icon: <Users size={18} />, label: "Người xem hiện tại", val: "1.248", sub: "+18% so với hÂm qua",
+      icon: <Users size={18} />, label: "Người xem hiện tại", val: "1.248", sub: "+18% so với hôm qua",
       badge: null, iconBg: "bg-green-50", iconColor: "text-green-500",
     },
     {
@@ -274,13 +274,6 @@ export default function StreamingPage() {
 
   return (
     <div className="p-4">
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-4 pb-3">
-        <div>
-          <div className="text-[20px] font-bold uppercase tracking-[0.08em] text-slate-900">Phát trực tuyến</div>
-        </div>
-      </div>
-
       {/* Stats */}
       <div className="grid grid-cols-5 gap-3 mb-4">
         {stats.map(s => (
@@ -315,7 +308,7 @@ export default function StreamingPage() {
                   <div className="w-8 h-4 bg-blue-500 rounded-full relative">
                     <div className="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full shadow" />
                   </div>
-                  Tự động lÂm mới
+                  Tự động làm mới
                 </label>
                 <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] text-gray-600 hover:bg-gray-50">
                   <Maximize2 size={13} /> Toàn màn hình
