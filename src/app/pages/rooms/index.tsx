@@ -2,12 +2,12 @@
 import {
   Search, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight,
   Users, UserCheck, Wrench, ArrowRight, Plus,
-  Volume2, Activity, AlertTriangle, WifiOff,
+  Activity, AlertTriangle, WifiOff,
   School,
 } from "lucide-react";
 import { StatCard } from "../../components/StatCard";
 import { AddEntityDialog } from "../../components/AddEntityDialog";
-import { ROOMS, RECENT_ACTIVITIES, ATTENTION_ROOMS, type Room } from "../../data/rooms";
+import { ROOMS, type Room } from "../../data/rooms";
 
 // ── Status helpers ────────────────────────────────────────────────────────────
 function statusLabel(s: string) {
@@ -29,14 +29,6 @@ function noiseCls(n: string) {
   if (n === "Trung bình") return "text-yellow-600 font-semibold";
   if (n === "Cao")      return "text-red-600 font-semibold";
   return "text-gray-400";
-}
-function activityIcon(type: string) {
-  const base = "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0";
-  if (type === "active")   return <div className={`${base} bg-green-100`}><Activity size={14} className="text-green-600" /></div>;
-  if (type === "warning")  return <div className={`${base} bg-yellow-100`}><Wrench size={14} className="text-yellow-600" /></div>;
-  if (type === "alert")    return <div className={`${base} bg-red-100`}><Volume2 size={14} className="text-red-500" /></div>;
-  if (type === "inactive") return <div className={`${base} bg-gray-100`}><WifiOff size={14} className="text-gray-500" /></div>;
-  return <div className={`${base} bg-orange-100`}><AlertTriangle size={14} className="text-orange-500" /></div>;
 }
 
 // ── Room card ─────────────────────────────────────────────────────────────────
@@ -99,62 +91,6 @@ const ROOM_PAGE_ITEMS: Room[] = [
     return { ...room, ...extraRooms[index] };
   }),
 ];
-
-// ── Right panel ───────────────────────────────────────────────────────────────
-function RightPanel() {
-  return (
-    <div className="mt-4 grid w-full grid-cols-1 gap-4 xl:grid-cols-2">
-      {/* Recent activity */}
-      <div className="app-surface h-full p-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Hoạt động gần đây</div>
-          <button className="text-[11px] text-blue-500 hover:underline">Xem tất cả</button>
-        </div>
-        <div className="space-y-2.5">
-          {RECENT_ACTIVITIES.map((a, i) => (
-            <div key={i} className="flex gap-2.5">
-              {activityIcon(a.type)}
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-[11px] font-medium text-gray-700 truncate">{a.room} {a.desc}</span>
-                  <span className="text-[10px] text-gray-400 flex-shrink-0">{a.time}</span>
-                </div>
-                <div className="text-[10px] text-gray-400 truncate">{a.sub}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Attention rooms */}
-      <div className="app-surface h-full p-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Phòng học cần chú ý</div>
-          <button className="text-[11px] text-blue-500 hover:underline">Xem tất cả</button>
-        </div>
-        <div className="space-y-2.5">
-          {ATTENTION_ROOMS.map((r, i) => (
-            <div key={i} className="flex items-start gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                <School size={14} className="text-orange-500" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-[11px] font-medium text-gray-700">{r.room}</span>
-                  <span className="text-[10px] text-gray-400 flex-shrink-0">{r.time}</span>
-                </div>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[10px] text-gray-500 truncate">{r.issue}</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${r.badgeColor}`}>{r.badge}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ── Pagination ────────────────────────────────────────────────────────────────
 function Pagination() {
@@ -267,7 +203,6 @@ export default function RoomsPage() {
           </div>
 
           <Pagination />
-          <RightPanel />
         </div>
 
       </div>

@@ -1,592 +1,508 @@
-﻿import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
-  ChevronDown, ChevronLeft, ChevronRight,
-  Play, Download, MoreHorizontal, Eye, ExternalLink,
-  Camera, RotateCcw, Search, SlidersHorizontal,
-  ImageIcon, LayoutGrid, Maximize2, Volume2,
-  SkipBack, SkipForward, Trash2, Folder,
-  MessageCircle, Smartphone, DoorOpen, UserX, Megaphone,
-  CalendarDays, School, HardDrive, Pause, TriangleAlert,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  MoreHorizontal,
+  Play,
+  RotateCcw,
+  Search,
+  TriangleAlert,
 } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { REC_CAMERAS, REC_LIST, EVENTS, DOWNLOADS } from "../../data/recordings";
-import { PageTabs } from "../../components/PageTabs";
+import { REC_LIST } from "../../data/recordings";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../../components/ui/dialog";
 
-type HistoryTab = "time" | "event" | "download";
-type DownloadSubTab = "list" | "history";
+type RecordItem = (typeof REC_LIST)[number];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function levelBadge(l: string) {
-  if (l === "Cao")       return <span className="text-[11px] px-2 py-0.5 rounded bg-red-100 text-red-600 font-medium">Cao</span>;
-  if (l === "Trung bình") return <span className="text-[11px] px-2 py-0.5 rounded bg-yellow-100 text-yellow-700 font-medium">Trung bình</span>;
-  return <span className="text-[11px] px-2 py-0.5 rounded bg-green-100 text-green-600 font-medium">Thấp</span>;
+const ALL_OPTION = "Tất cả";
+const TABLE_HEAD = "px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap";
+const TABLE_CELL = "px-3 py-3 text-[12px] text-slate-700 align-middle dark:text-slate-200";
+
+const RECORD_TYPES = [ALL_OPTION, ...new Set(REC_LIST.map(record => record.type))];
+const CAMERA_OPTIONS = [ALL_OPTION, ...new Set(REC_LIST.map(record => record.camera.split("·")[0].trim()))];
+const ROOM_OPTIONS = [ALL_OPTION, ...new Set(REC_LIST.map(record => record.room))];
+
+function getCameraName(record: RecordItem) {
+  return record.camera.split("·")[0].trim();
 }
 
-function statusBadge(s: string) {
-  if (s === "Hoàn thành") return <span className="text-[11px] px-2 py-0.5 rounded-full bg-green-100 text-green-600 font-medium">Hoàn thành</span>;
-  if (s === "Đang tải")   return <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 font-medium">Đang tải</span>;
-  return <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">Chờ tải</span>;
+function getCameraDetail(record: RecordItem) {
+  return record.camera.split("·").slice(1).join("·").trim();
 }
 
-function eventIcon(type: string) {
-  if (type.includes("nói chuyện")) return <MessageCircle size={14} className="text-red-500" />;
-  if (type.includes("điện thoại")) return <Smartphone size={14} className="text-yellow-500" />;
-  if (type.includes("Ra vào"))     return <DoorOpen size={14} className="text-blue-500" />;
-  if (type.includes("mặt"))        return <UserX size={14} className="text-orange-500" />;
-  return <Megaphone size={14} className="text-purple-500" />;
-}
+function typeBadge(type: string) {
+  const style = type === "Sự kiện" ? "bg-amber-100 text-amber-700" : "bg-blue-50 text-blue-700";
 
-// ── Common table header ───────────────────────────────────────────────────────
-const thCls = "px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap";
-const tdCls = "px-3 py-3 text-[12px] text-gray-700 align-middle";
+  const darkStyle = type.startsWith("S")
+    ? "dark:bg-amber-500/18 dark:text-amber-200 dark:ring-1 dark:ring-amber-400/24"
+    : "dark:bg-blue-500/16 dark:text-blue-200 dark:ring-1 dark:ring-blue-400/20";
 
-// ── Pagination ────────────────────────────────────────────────────────────────
-function Pager({ total, unit, perPage = 10 }: { total: number; unit: string; perPage?: number }) {
-  const [page, setPage] = useState(1);
-  const last = Math.ceil(total / perPage);
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-gray-900/15 text-[12px] text-gray-500">
-      <span>Hiển thị 1 - {perPage} trong tổng số {total} {unit}</span>
-      <div className="flex items-center gap-1">
-        <button disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}
-          className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center hover:bg-gray-50 disabled:opacity-40">
-          <ChevronLeft size={13} />
-        </button>
-        {[1, 2, 3].map(p => (
-          <button key={p} onClick={() => setPage(p)}
-            className={`w-7 h-7 rounded border text-[12px] font-medium ${page === p ? "bg-blue-600 text-white border-blue-600" : "border-gray-200 hover:bg-gray-50"}`}>
-            {p}
-          </button>
-        ))}
-        <span className="px-1">...</span>
-        <button onClick={() => setPage(last)}
-          className={`w-7 h-7 rounded border text-[12px] font-medium ${page === last ? "bg-blue-600 text-white border-blue-600" : "border-gray-200 hover:bg-gray-50"}`}>
-          {last}
-        </button>
-        <button onClick={() => setPage(p => Math.min(last, p + 1))}
-          className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center hover:bg-gray-50">
-          <ChevronRight size={13} />
-        </button>
-        <div className="flex items-center gap-1 ml-2 border border-gray-200 rounded px-2 py-1 cursor-pointer hover:bg-gray-50">
-          <span>{perPage} / trang</span>
-          <ChevronDown size={11} className="text-gray-400" />
-        </div>
-      </div>
-    </div>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${style} ${darkStyle}`}>
+      {type}
+    </span>
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// TAB 1 – XEM THEO THỜI GIAN
-// ══════════════════════════════════════════════════════════════════════════════
-
-function RightFilterPanel() {
-  const pieData = [
-    { value: 682, color: "#4285F4" },
-    { value: 318, color: "#e2e8f0" },
-  ];
-  return (
-    <div className="w-full flex-shrink-0 space-y-0 2xl:w-[240px]">
-      {/* Filter */}
-      <div className="app-surface p-3 mb-3">
-        <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Bộ lọc tìm kiếm</div>
-        {[{ label: "Phòng học", placeholder: "Tất cả phòng học" }, { label: "Camera", placeholder: "Tất cả camera" }, { label: "Loại ghi hình", placeholder: "Tất cả" }].map(f => (
-          <div key={f.label} className="mb-2">
-            <div className="text-[11px] text-gray-500 mb-1">{f.label}</div>
-            <button className="w-full flex items-center justify-between border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] text-gray-700 hover:bg-gray-50">
-              <span>{f.placeholder}</span><ChevronDown size={12} className="text-gray-400" />
-            </button>
-          </div>
-        ))}
-        <div className="mb-2">
-          <div className="text-[11px] text-gray-500 mb-1">Khoảng thời gian</div>
-          <div className="flex items-center gap-1">
-            <input type="text" defaultValue="28/04/2026" className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-[11px] outline-none" />
-            <span className="text-gray-400 text-[11px]">—</span>
-            <input type="text" defaultValue="29/04/2026" className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-[11px] outline-none" />
-          </div>
-        </div>
-        <div className="text-[11px] text-gray-500 mb-1.5">Tìm kiếm nhanh</div>
-        <div className="grid grid-cols-2 gap-1.5 mb-3">
-          {["Hôm nay", "Hôm qua", "7 ngày qua", "30 ngày qua"].map(q => (
-            <button key={q} className="border border-gray-200 rounded-lg px-2 py-1.5 text-[11px] text-gray-600 hover:bg-gray-50 hover:border-blue-300 transition-colors">{q}</button>
-          ))}
-          <button className="col-span-2 border border-blue-300 bg-blue-50 rounded-lg px-2 py-1.5 text-[11px] text-blue-600 font-medium">Tuỳ chọn</button>
-        </div>
-        <button className="w-full bg-blue-600 text-white rounded-lg py-2 text-[12px] font-medium hover:bg-blue-700 transition-colors mb-1.5">
-          Tìm kiếm
-        </button>
-        <button className="w-full flex items-center justify-center gap-1.5 border border-gray-200 rounded-lg py-1.5 text-[12px] text-gray-600 hover:bg-gray-50">
-          <RotateCcw size={12} /> Đặt lại
-        </button>
-      </div>
-
-      {/* Storage */}
-      <div className="app-surface p-3 mb-3">
-        <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Dung lượng lưu trữ</div>
-        <div className="relative flex justify-center mb-1">
-          <ResponsiveContainer width="100%" height={120}>
-            <PieChart>
-              <Pie data={pieData} cx="50%" cy="50%" innerRadius={38} outerRadius={52} dataKey="value" startAngle={90} endAngle={-270} strokeWidth={0}>
-                {pieData.map((d, i) => <Cell key={i} fill={d.color} />)}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <div className="text-lg font-bold text-gray-800">68%</div>
-            <div className="text-[9px] text-gray-400 leading-tight text-center">Đã sử dụng</div>
-          </div>
-        </div>
-        <div className="space-y-1 text-[11px]">
-          <div className="flex justify-between"><span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-blue-500" />Đã sử dụng</span><span className="font-medium">682 GB</span></div>
-          <div className="flex justify-between"><span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-gray-200" />Còn trống</span><span className="font-medium">318 GB</span></div>
-          <div className="flex justify-between text-gray-400 pt-1 border-t border-gray-50"><span>Tổng dung lượng</span><span>1.0 TB</span></div>
-        </div>
-      </div>
-
-      {/* NVR device */}
-      <div className="app-surface p-3">
-        <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Thiết bị lưu trữ</div>
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-6 bg-gray-800 rounded flex items-center justify-center flex-shrink-0">
-            <HardDrive size={12} className="text-gray-300" />
-          </div>
-          <div>
-            <div className="text-[12px] font-medium text-gray-700">NVR-01 (Phòng Thiết bị)</div>
-            <div className="flex items-center gap-1 text-[11px] text-gray-500 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />Trạng thái: Hoạt động
-            </div>
-          </div>
-        </div>
-        <div className="text-[11px] text-gray-500 mb-1">Dung lượng: 1.0 TB</div>
-        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-full bg-blue-500 rounded-full" style={{ width: "68%" }} />
-        </div>
-        <div className="text-[10px] text-gray-400 mt-0.5 text-right">68%</div>
-      </div>
-    </div>
-  );
+function parseRecordSize(size: string) {
+  const value = Number.parseFloat(size.replace(",", "."));
+  if (Number.isNaN(value)) return 0;
+  return size.toUpperCase().includes("GB") ? value * 1024 : value;
 }
 
-function TimelineBar() {
-  const segments = [
-    { start: 0,   end: 15,  color: "#4285F4" },
-    { start: 15,  end: 30,  color: "#4285F4" },
-    { start: 30,  end: 45,  color: "#34A853" },
-    { start: 45,  end: 55,  color: "#FBBC05" },
-    { start: 55,  end: 60,  color: "#4285F4" },
-    { start: 60,  end: 75,  color: "#4285F4" },
-    { start: 75,  end: 85,  color: "#34A853" },
-    { start: 85,  end: 90,  color: "#ef4444" },
-    { start: 90,  end: 100, color: "#4285F4" },
-  ];
-  const hours = ["00:00", "02:00", "04:00", "06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00", "24:00"];
-  return (
-    <div className="px-4 pb-3">
-      {/* Segments */}
-      <div className="relative h-5 bg-gray-100 rounded overflow-hidden mb-1">
-        {segments.map((s, i) => (
-          <div key={i} className="absolute top-0 h-full" style={{ left: `${s.start}%`, width: `${s.end - s.start}%`, backgroundColor: s.color, opacity: 0.7 }} />
-        ))}
-        <div className="absolute top-0 h-full w-0.5 bg-yellow-400" style={{ left: "39.3%" }} />
-      </div>
-      {/* Time labels */}
-      <div className="flex justify-between text-[9px] text-gray-400 mb-2">
-        {hours.map(h => <span key={h}>{h}</span>)}
-      </div>
-      {/* Legend */}
-      <div className="flex items-center gap-4 text-[10px] text-gray-500">
-        {[
-          { color: "#4285F4", label: "Ghi hình liên tục" },
-          { color: "#34A853", label: "Phát hiện chuyển động" },
-          { color: "#FBBC05", label: "Sự kiện" },
-          { color: "#ef4444", label: "Thông báo hệ thống" },
-        ].map(l => (
-          <span key={l.label} className="flex items-center gap-1">
-            <span className="w-3 h-2 rounded-sm inline-block" style={{ backgroundColor: l.color }} />
-            {l.label}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
+function formatStorageSize(sizeInMb: number) {
+  if (sizeInMb >= 1024) return `${(sizeInMb / 1024).toFixed(1)} GB`;
+  return `${sizeInMb.toFixed(1)} MB`;
 }
-
-function VideoPlayer({ cam }: { cam: typeof REC_CAMERAS[number] }) {
-  const [playing, setPlaying] = useState(false);
-  return (
-    <div className="app-surface mb-4 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-900/15">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-[13px] text-gray-800">{cam.name} - {cam.sub}</span>
-          <span className="flex items-center gap-1 text-[10px] text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />Online
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-2.5 py-1 text-[12px] text-gray-600 hover:bg-gray-50"><ImageIcon size={12} /> Chụp ảnh</button>
-          <button className="app-icon-btn"><LayoutGrid size={13} className="text-gray-500" /></button>
-          <button className="app-icon-btn"><Maximize2 size={13} className="text-gray-500" /></button>
-        </div>
-      </div>
-      {/* Video */}
-      <div className="relative bg-black">
-        <img src={cam.img} alt={cam.name} className="w-full h-[300px] object-cover opacity-90" />
-        <div className="absolute top-3 left-3 bg-black/50 text-white text-[11px] px-2 py-0.5 rounded font-mono">
-          29/04/2026&nbsp;&nbsp;09:35:22
-        </div>
-        {/* Controls overlay */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-4 pt-8 pb-3">
-          <div className="flex items-center gap-2 mb-2">
-            <button onClick={() => setPlaying(p => !p)} className="text-white hover:text-blue-300 transition-colors">
-              {playing ? <Pause size={20} /> : <Play size={20} />}
-            </button>
-            <button className="text-white/70 hover:text-white"><SkipBack size={16} /></button>
-            <button className="text-white/70 hover:text-white"><SkipForward size={16} /></button>
-            <button className="text-white/70 hover:text-white"><Volume2 size={16} /></button>
-            <div className="flex-1 mx-2">
-              <div className="h-1 bg-white/30 rounded-full relative cursor-pointer">
-                <div className="h-full bg-blue-400 rounded-full" style={{ width: "39.3%" }} />
-                <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow" style={{ left: "calc(39.3% - 6px)" }} />
-              </div>
-            </div>
-            <span className="text-white/80 text-[11px] font-mono">09:35:22</span>
-            <span className="text-white/50 text-[11px] font-mono">/ 24:00:00</span>
-            <button className="text-white/70 hover:text-white ml-1"><Camera size={15} /></button>
-            <button className="text-white/70 hover:text-white"><Maximize2 size={15} /></button>
-          </div>
-        </div>
-      </div>
-      <TimelineBar />
-    </div>
-  );
-}
-
-function TimeTab() {
-  const [selectedCam, setSelectedCam] = useState(REC_CAMERAS[0]);
-  return (
-    <div className="flex flex-col items-start gap-4 2xl:flex-row">
-      <div className="flex-1 min-w-0">
-        {/* Camera strip */}
-        <div className="app-surface mb-4">
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-900/15">
-            <div className="text-[13px] font-bold text-gray-800">Danh sách camera ({REC_CAMERAS.length})</div>
-            <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] text-gray-600 hover:bg-gray-50">
-              <Camera size={12} /> Quản lý camera
-            </button>
-          </div>
-          <div className="flex gap-3 overflow-x-auto px-4 py-3 scrollbar-thin">
-            {REC_CAMERAS.map(cam => (
-              <div key={cam.id} onClick={() => setSelectedCam(cam)}
-                className={`flex-shrink-0 w-[160px] cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${selectedCam.id === cam.id ? "border-blue-500" : "border-transparent"}`}>
-                <div className="relative">
-                  <img src={cam.img} alt={cam.name} className="w-full h-[90px] object-cover" />
-                  {selectedCam.id === cam.id && (
-                    <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full" />
-                    </div>
-                  )}
-                </div>
-                <div className="p-2 bg-white border-t border-gray-900/15">
-                  <div className="text-[11px] font-semibold text-gray-800">{cam.name}</div>
-                  <div className="text-[10px] text-gray-400">{cam.sub}</div>
-                  <div className="text-[10px] text-gray-400 truncate">{cam.room}</div>
-                  <div className="flex items-center gap-1 mt-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    <span className="text-[10px] text-green-600">Online</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Video player */}
-        <VideoPlayer cam={selectedCam} />
-
-        {/* Recording list */}
-        <div className="app-surface overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-900/15">
-            <div className="text-[13px] font-bold text-gray-800">Danh sách ghi hình <span className="text-gray-400 font-normal text-[12px]">Tổng 256 bản ghi</span></div>
-            <div className="flex gap-2">
-              <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-gray-600 hover:bg-gray-50"><Download size={13} /> Tải xuống đã chọn</button>
-              <button className="flex items-center gap-1.5 border border-red-200 rounded-lg px-3 py-1.5 text-[12px] text-red-500 hover:bg-red-50"><Trash2 size={13} /> Xóa</button>
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-900/15">
-                <tr>
-                  <th className="pl-4 pr-2 py-3"><input type="checkbox" className="rounded" /></th>
-                  <th className={thCls}>Hình thu nhỏ</th>
-                  <th className={thCls}>Camera</th>
-                  <th className={thCls}>Phòng học</th>
-                  <th className={thCls}>Thời gian bắt đầu</th>
-                  <th className={thCls}>Thời gian kết thúc</th>
-                  <th className={thCls}>Loại ghi hình</th>
-                  <th className={thCls}>Thời lượng</th>
-                  <th className={thCls}>Kích thước</th>
-                  <th className={thCls}>Sự kiện</th>
-                  <th className={thCls}>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {REC_LIST.map(r => (
-                  <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="pl-4 pr-2 py-2"><input type="checkbox" className="rounded" /></td>
-                    <td className="px-3 py-2">
-                      <img src={r.img} alt="" className="w-14 h-10 object-cover rounded" />
-                    </td>
-                    <td className={tdCls}>
-                      <div className="text-[11px] font-medium text-gray-800 whitespace-nowrap">{r.camera.split("·")[0].trim()}</div>
-                      <div className="text-[10px] text-gray-400">{r.camera.split("·").slice(1).join("·").trim()}</div>
-                    </td>
-                    <td className={tdCls + " whitespace-nowrap"}>{r.room}</td>
-                    <td className={tdCls + " font-mono text-[11px] whitespace-nowrap"}>{r.start}</td>
-                    <td className={tdCls + " font-mono text-[11px] whitespace-nowrap"}>{r.end}</td>
-                    <td className={tdCls}>
-                      <span className={`text-[11px] px-2 py-0.5 rounded ${r.type === "Sự kiện" ? "bg-orange-100 text-orange-600" : "bg-blue-50 text-blue-600"}`}>{r.type}</span>
-                    </td>
-                    <td className={tdCls + " font-mono"}>{r.duration}</td>
-                    <td className={tdCls}>{r.size}</td>
-                    <td className={tdCls}>
-                      {r.event !== "-"
-                        ? <span className="text-[11px] text-orange-600 flex items-center gap-1"><TriangleAlert size={12} className="text-orange-400" />{r.event}</span>
-                        : <span className="text-gray-400">-</span>}
-                    </td>
-                    <td className={tdCls}>
-                      <div className="flex items-center gap-1">
-                        <button className="app-icon-btn"><Play size={12} /></button>
-                        <button className="app-icon-btn"><Download size={12} /></button>
-                        <button className="app-icon-btn"><MoreHorizontal size={12} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <Pager total={256} unit="bản ghi" />
-          </div>
-        </div>
-      </div>
-      <RightFilterPanel />
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// TAB 2 – XEM THEO SỰ KIỆN
-// ══════════════════════════════════════════════════════════════════════════════
-
-function EventTab() {
-  return (
-    <div>
-      {/* Filter bar */}
-      <div className="app-surface p-4 mb-4">
-        <div className="flex items-center gap-2 flex-wrap">
-          {[
-            { label: "Loại sự kiện", val: "Tất cả loại sự kiện" },
-            { label: "Mức độ",       val: "Tất cả mức độ" },
-            { label: "Camera",       val: "Tất cả camera" },
-            { label: "Phòng học",    val: "Tất cả phòng học" },
-          ].map(f => (
-            <div key={f.label} className="flex flex-col gap-0.5">
-              <div className="text-[10px] text-gray-400">{f.label}</div>
-              <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-gray-700 hover:bg-gray-50 whitespace-nowrap">
-                {f.val} <ChevronDown size={11} className="text-gray-400" />
-              </button>
-            </div>
-          ))}
-          <div className="flex flex-col gap-0.5">
-            <div className="text-[10px] text-gray-400">Thời gian</div>
-            <div className="flex items-center gap-1">
-              <input type="text" defaultValue="28/04/2026  00:00" className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] outline-none w-36" />
-              <span className="text-gray-400 text-[11px]">→</span>
-              <input type="text" defaultValue="29/04/2026  23:59" className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] outline-none w-36" />
-              <button className="app-icon-btn"><CalendarDays size={13} className="text-gray-400" /></button>
-            </div>
-          </div>
-          <div className="flex items-end gap-2 ml-auto">
-            <button className="flex items-center gap-1.5 bg-blue-600 text-white rounded-lg px-4 py-1.5 text-[12px] font-medium hover:bg-blue-700">
-              <Search size={13} /> Tìm kiếm
-            </button>
-            <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-gray-600 hover:bg-gray-50">
-              <SlidersHorizontal size={13} /> Xóa bộ lọc
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Events table */}
-      <div className="app-surface overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-900/15">
-              <tr>
-                <th className="pl-4 pr-2 py-3"><input type="checkbox" className="rounded" /></th>
-                <th className={thCls}>Thời gian ↑</th>
-                <th className={thCls}>Sự kiện</th>
-                <th className={thCls}>Camera</th>
-                <th className={thCls}>Phòng học</th>
-                <th className={thCls}>Mức độ</th>
-                <th className={thCls}>Hình ảnh</th>
-                <th className={thCls}>Clip</th>
-                <th className={thCls}>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {EVENTS.map((e, i) => (
-                <tr key={i} className="hover:bg-gray-50 transition-colors">
-                  <td className="pl-4 pr-2 py-3"><input type="checkbox" className="rounded" /></td>
-                  <td className={tdCls}>
-                    <div className="font-mono text-[11px] text-gray-700">{e.time}</div>
-                    <div className="font-mono text-[12px] font-semibold text-gray-800">{e.clock}</div>
-                  </td>
-                  <td className={tdCls}>
-                    <span className="flex items-center gap-2">
-                      <span className="app-icon-badge rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">{eventIcon(e.type)}</span>
-                      <span className="text-[12px] text-gray-700">{e.type}</span>
-                    </span>
-                  </td>
-                  <td className={tdCls}>{e.camera}</td>
-                  <td className={tdCls}>{e.room}</td>
-                  <td className={tdCls}>{levelBadge(e.level)}</td>
-                  <td className="px-3 py-2">
-                    <img src={e.img} alt="" className="w-16 h-11 object-cover rounded" />
-                  </td>
-                  <td className={tdCls}>
-                    <span className="flex items-center gap-1.5 text-[12px]"><Play size={11} className="text-gray-400" />{e.clip}</span>
-                  </td>
-                  <td className={tdCls}>
-                    <div className="flex items-center gap-1">
-                      <button className="app-icon-btn"><Eye size={12} /></button>
-                      <button className="app-icon-btn"><Download size={12} /></button>
-                      <button className="app-icon-btn"><ExternalLink size={12} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Pager total={256} unit="sự kiện" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// TAB 3 – TẢI XUỐNG
-// ══════════════════════════════════════════════════════════════════════════════
-
-function DownloadTab() {
-  const [subTab, setSubTab] = useState<DownloadSubTab>("list");
-  return (
-    <div>
-      <div className="app-surface overflow-hidden">
-        {/* Sub-tabs + actions */}
-        <div className="flex items-center justify-between px-4 border-b border-gray-900/15">
-          <div className="flex">
-            {[{ id: "list" as DownloadSubTab, label: "Danh sách tải xuống" }, { id: "history" as DownloadSubTab, label: "Lịch sử tải xuống" }].map(t => (
-              <button key={t.id} onClick={() => setSubTab(t.id)}
-                className={`px-4 py-3 text-[12px] font-medium border-b-2 transition-colors ${subTab === t.id ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1.5 border border-red-200 rounded-lg px-3 py-1.5 text-[12px] text-red-500 hover:bg-red-50"><Trash2 size={13} /> Xóa đã chọn</button>
-            <button className="flex items-center gap-1.5 border border-red-200 rounded-lg px-3 py-1.5 text-[12px] text-red-500 hover:bg-red-50"><Trash2 size={13} /> Xóa tất cả</button>
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-900/15">
-              <tr>
-                <th className="pl-4 pr-2 py-3"><input type="checkbox" className="rounded" /></th>
-                <th className={thCls}>Tên file</th>
-                <th className={thCls}>Camera</th>
-                <th className={thCls}>Phòng học</th>
-                <th className={thCls}>Khoảng thời gian</th>
-                <th className={thCls}>Dung lượng</th>
-                <th className={thCls} style={{ minWidth: 140 }}>Tiến trình</th>
-                <th className={thCls}>Trạng thái</th>
-                <th className={thCls}>Thời gian tạo</th>
-                <th className={thCls}>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {DOWNLOADS.map(d => (
-                <tr key={d.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="pl-4 pr-2 py-3"><input type="checkbox" className="rounded" /></td>
-                  <td className={tdCls}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-6 bg-blue-600 rounded flex items-center justify-center flex-shrink-0">
-                        <span className="text-white text-[8px] font-bold">MP4</span>
-                      </div>
-                      <span className="text-[11px] text-gray-700 font-mono">{d.file}</span>
-                    </div>
-                  </td>
-                  <td className={tdCls}>{d.camera}</td>
-                  <td className={tdCls}>{d.room}</td>
-                  <td className={tdCls + " text-[11px] whitespace-nowrap"}>{d.range}</td>
-                  <td className={tdCls}>{d.size}</td>
-                  <td className={tdCls}>
-                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mb-1">
-                      <div className={`h-full rounded-full ${d.pct === 100 ? "bg-green-500" : d.pct > 0 ? "bg-blue-500" : "bg-gray-300"}`}
-                        style={{ width: `${d.pct}%` }} />
-                    </div>
-                    <div className="text-[10px] text-gray-400">{d.pct}%</div>
-                  </td>
-                  <td className={tdCls}>{statusBadge(d.status)}</td>
-                  <td className={tdCls + " text-[11px] whitespace-nowrap"}>{d.created}</td>
-                  <td className={tdCls}>
-                    <div className="flex items-center gap-1">
-                      {d.pct === 100
-                        ? <button className="app-icon-btn"><Play size={12} /></button>
-                        : <button className="app-icon-btn"><Pause size={12} /></button>
-                      }
-                      <button className="app-icon-btn"><Folder size={12} /></button>
-                      <button className="app-icon-btn app-icon-btn-danger"><Trash2 size={12} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Pager total={24} unit="tải xuống" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// MAIN PAGE
-// ══════════════════════════════════════════════════════════════════════════════
 
 export default function HistoryPage() {
-  const [tab, setTab] = useState<HistoryTab>("time");
-  const TABS = [
-    { id: "time" as HistoryTab,     label: "Xem theo thời gian" },
-    { id: "event" as HistoryTab,    label: "Xem theo sự kiện" },
-    { id: "download" as HistoryTab, label: "Tải xuống" },
-  ];
+  const [camera, setCamera] = useState(ALL_OPTION);
+  const [room, setRoom] = useState(ALL_OPTION);
+  const [recordType, setRecordType] = useState(ALL_OPTION);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [viewingRecord, setViewingRecord] = useState<RecordItem | null>(null);
+
+  const filteredRecords = useMemo(() => {
+    return REC_LIST.filter(record => {
+      const matchesCamera = camera === ALL_OPTION || getCameraName(record) === camera;
+      const matchesRoom = room === ALL_OPTION || record.room === room;
+      const matchesType = recordType === ALL_OPTION || record.type === recordType;
+
+      const recordDate = record.start.slice(0, 10).split("/").reverse().join("-");
+      const matchesFromDate = fromDate ? recordDate >= fromDate : true;
+      const matchesToDate = toDate ? recordDate <= toDate : true;
+
+      return matchesCamera && matchesRoom && matchesType && matchesFromDate && matchesToDate;
+    });
+  }, [camera, fromDate, recordType, room, toDate]);
+
+  const hasActiveFilters =
+    camera !== ALL_OPTION || room !== ALL_OPTION || recordType !== ALL_OPTION || fromDate !== "" || toDate !== "";
+
+  const totalStorageMb = useMemo(
+    () => REC_LIST.reduce((total, record) => total + parseRecordSize(record.size), 0),
+    [],
+  );
+  const storagePercent = Math.min(100, Math.max(6, (filteredRecords.length / Math.max(REC_LIST.length, 1)) * 100));
+
+  const resetFilters = () => {
+    setCamera(ALL_OPTION);
+    setRoom(ALL_OPTION);
+    setRecordType(ALL_OPTION);
+    setFromDate("");
+    setToDate("");
+  };
+
+  const setQuickRange = (days: number) => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - days + 1);
+    setFromDate(start.toISOString().slice(0, 10));
+    setToDate(end.toISOString().slice(0, 10));
+  };
 
   return (
     <div className="app-page">
-      <div className="mb-4">
-        <PageTabs tabs={TABS} activeTab={tab} onChange={setTab} ariaLabel="Chế độ xem lịch sử" />
+      <div className="mb-4 grid gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+        <section className="app-surface overflow-hidden">
+          <div className="border-b border-slate-200/80 px-4 py-3 dark:border-slate-700/70">
+            <div className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-slate-900 dark:text-slate-50">
+              <span className="h-4 w-1 rounded-full bg-blue-500" />
+              Bộ lọc tìm kiếm
+            </div>
+          </div>
+
+          <div className="space-y-4 p-4">
+            <div className="grid gap-4 xl:grid-cols-3">
+              <div>
+                <label className="mb-1.5 block text-[12px] font-semibold text-slate-700 dark:text-slate-200">
+                  Phòng học
+                </label>
+                <select
+                  value={room}
+                  onChange={event => setRoom(event.target.value)}
+                  className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-[12px] text-slate-700 outline-none transition-colors focus:border-blue-400 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-100"
+                >
+                  {ROOM_OPTIONS.map(option => (
+                    <option key={option} value={option}>
+                      {option === ALL_OPTION ? "Tất cả phòng" : option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[12px] font-semibold text-slate-700 dark:text-slate-200">
+                  Camera
+                </label>
+                <select
+                  value={camera}
+                  onChange={event => setCamera(event.target.value)}
+                  className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-[12px] text-slate-700 outline-none transition-colors focus:border-blue-400 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-100"
+                >
+                  {CAMERA_OPTIONS.map(option => (
+                    <option key={option} value={option}>
+                      {option === ALL_OPTION ? "Tất cả camera" : option}
+                    </option>
+                  ))}
+                </select>
+                <div className="mt-1.5 text-[11px] text-slate-400">
+                  Chọn một phòng cụ thể nếu muốn lọc theo camera.
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[12px] font-semibold text-slate-700 dark:text-slate-200">
+                  Trạng thái bản ghi
+                </label>
+                <select
+                  value={recordType}
+                  onChange={event => setRecordType(event.target.value)}
+                  className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-[12px] text-slate-700 outline-none transition-colors focus:border-blue-400 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-100"
+                >
+                  {RECORD_TYPES.map(option => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-[12px] font-semibold text-slate-700 dark:text-slate-200">
+                Khoảng thời gian
+              </label>
+              <div className="grid gap-2 md:grid-cols-2">
+                <div className="flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 dark:border-slate-700 dark:bg-slate-950/40">
+                  <input
+                    type="date"
+                    value={fromDate}
+                    onChange={event => setFromDate(event.target.value)}
+                    className="w-full bg-transparent text-[12px] outline-none dark:text-slate-100"
+                  />
+                  <CalendarDays size={14} className="text-slate-400" />
+                </div>
+                <div className="flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 dark:border-slate-700 dark:bg-slate-950/40">
+                  <input
+                    type="date"
+                    value={toDate}
+                    onChange={event => setToDate(event.target.value)}
+                    className="w-full bg-transparent text-[12px] outline-none dark:text-slate-100"
+                  />
+                  <CalendarDays size={14} className="text-slate-400" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { label: "Hôm nay", days: 1 },
+                { label: "Hôm qua", days: 2 },
+                { label: "7 ngày qua", days: 7 },
+                { label: "30 ngày qua", days: 30 },
+              ].map(option => (
+                <button
+                  key={option.label}
+                  type="button"
+                  onClick={() => setQuickRange(option.days)}
+                  className="rounded-md bg-slate-100 px-3 py-1.5 text-[12px] font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-blue-500/10 dark:hover:text-blue-200"
+                >
+                  {option.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="inline-flex h-8 min-w-[160px] items-center justify-center gap-1.5 rounded-md bg-blue-600 px-4 text-[13px] font-medium text-white transition-colors hover:bg-blue-700 md:ml-auto"
+              >
+                <Search size={14} />
+                Tìm kiếm
+              </button>
+              <button
+                type="button"
+                onClick={resetFilters}
+                className={`inline-flex h-8 min-w-[160px] items-center justify-center gap-1.5 rounded-md px-4 text-[13px] font-medium transition-colors ${
+                  hasActiveFilters
+                    ? "border border-slate-200 bg-white text-slate-800 shadow-sm hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-200"
+                    : "border border-slate-200 bg-white text-slate-500 shadow-sm hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                }`}
+              >
+                <RotateCcw size={14} />
+                Đặt lại
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="app-surface overflow-hidden">
+          <div className="border-b border-slate-200/80 px-4 py-3 dark:border-slate-700/70">
+            <div className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-slate-900 dark:text-slate-50">
+              <span className="h-4 w-1 rounded-full bg-violet-500" />
+              Dung lượng lưu trữ
+            </div>
+          </div>
+
+          <div className="p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-[12px] text-slate-500 dark:text-slate-400">Đã sử dụng</div>
+                <div className="mt-1 text-[20px] font-bold text-slate-900 dark:text-slate-50">
+                  {formatStorageSize(totalStorageMb)}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-[28px] font-bold leading-none text-slate-900 dark:text-slate-50">
+                  {filteredRecords.length}
+                </div>
+                <div className="mt-1 text-[12px] text-slate-500 dark:text-slate-400">bản ghi</div>
+              </div>
+            </div>
+            <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+              <div className="h-full rounded-full bg-blue-600" style={{ width: `${storagePercent}%` }} />
+            </div>
+          </div>
+        </section>
       </div>
 
-      {tab === "time"     && <TimeTab />}
-      {tab === "event"    && <EventTab />}
-      {tab === "download" && <DownloadTab />}
+      <section className="app-surface overflow-hidden">
+        <div className="flex flex-col gap-3 border-b border-slate-200/80 px-4 py-3 dark:border-slate-700/70 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <div className="text-[17px] font-semibold text-slate-900 dark:text-slate-50">
+              Danh sách các bản ghi
+            </div>
+            <div className="text-[13px] text-slate-500 dark:text-slate-400">
+              Hiển thị {filteredRecords.length} / {REC_LIST.length} bản ghi
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-slate-50/90 dark:bg-slate-900/70">
+              <tr className="border-b border-slate-200/80 dark:border-slate-700/70">
+                <th className={TABLE_HEAD}>Hình thu nhỏ</th>
+                <th className={TABLE_HEAD}>Camera</th>
+                <th className={TABLE_HEAD}>Phòng học</th>
+                <th className={TABLE_HEAD}>Bắt đầu</th>
+                <th className={TABLE_HEAD}>Kết thúc</th>
+                <th className={TABLE_HEAD}>Loại</th>
+                <th className={TABLE_HEAD}>Thời lượng</th>
+                <th className={TABLE_HEAD}>Dung lượng</th>
+                <th className={TABLE_HEAD}>Sự kiện</th>
+                <th className={TABLE_HEAD}>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {filteredRecords.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="px-4 py-12 text-center">
+                    <div className="mx-auto flex max-w-md flex-col items-center gap-2">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-500 dark:bg-amber-500/10">
+                        <TriangleAlert size={20} />
+                      </div>
+                      <div className="text-sm font-medium text-slate-800 dark:text-slate-100">
+                        Không tìm thấy bản ghi phù hợp
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Hãy thử nới điều kiện lọc hoặc đặt lại bộ tìm kiếm.
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredRecords.map(record => (
+                  <tr
+                    key={record.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setViewingRecord(record)}
+                    onKeyDown={event => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setViewingRecord(record);
+                      }
+                    }}
+                    className="cursor-pointer transition-colors hover:bg-slate-50/70 focus:outline-none focus-visible:bg-blue-50/80 dark:hover:bg-slate-800/40 dark:focus-visible:bg-blue-950/30"
+                  >
+                    <td className="px-3 py-3">
+                      <img src={record.img} alt="" className="h-11 w-16 rounded-lg object-cover" />
+                    </td>
+                    <td className={TABLE_CELL}>
+                      <div className="text-[12px] font-medium text-slate-900 dark:text-slate-100">
+                        {getCameraName(record)}
+                      </div>
+                      <div className="text-[10px] text-slate-400">{getCameraDetail(record)}</div>
+                    </td>
+                    <td className={TABLE_CELL}>{record.room}</td>
+                    <td className={`${TABLE_CELL} font-mono text-[11px] whitespace-nowrap`}>{record.start}</td>
+                    <td className={`${TABLE_CELL} font-mono text-[11px] whitespace-nowrap`}>{record.end}</td>
+                    <td className={TABLE_CELL}>{typeBadge(record.type)}</td>
+                    <td className={`${TABLE_CELL} font-mono`}>{record.duration}</td>
+                    <td className={TABLE_CELL}>{record.size}</td>
+                    <td className={TABLE_CELL}>
+                      {record.event === "-" ? (
+                        <span className="text-slate-400">-</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600">
+                          <TriangleAlert size={12} className="text-amber-500" />
+                          {record.event}
+                        </span>
+                      )}
+                    </td>
+                    <td className={TABLE_CELL}>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          className="app-icon-btn"
+                          aria-label="Phát bản ghi"
+                          onClick={event => {
+                            event.stopPropagation();
+                            setViewingRecord(record);
+                          }}
+                        >
+                          <Play size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          className="app-icon-btn"
+                          aria-label="Tải xuống"
+                          onClick={event => event.stopPropagation()}
+                        >
+                          <Download size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          className="app-icon-btn"
+                          aria-label="Khác"
+                          onClick={event => event.stopPropagation()}
+                        >
+                          <MoreHorizontal size={12} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex flex-col gap-2 border-t border-slate-200/80 px-4 py-3 text-[12px] text-slate-500 dark:border-slate-700/70 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+          <span>Đang hiển thị {filteredRecords.length} bản ghi gần nhất</span>
+          <div className="flex items-center gap-2">
+            <button type="button" className="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/80">
+              <ChevronLeft size={14} />
+            </button>
+            <button type="button" className="rounded-lg border border-blue-600 bg-blue-600 px-3 py-1.5 font-medium text-white">
+              1
+            </button>
+            <button type="button" className="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/80">
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <Dialog open={viewingRecord !== null} onOpenChange={open => !open && setViewingRecord(null)}>
+        <DialogContent className="max-w-[860px] overflow-hidden p-0">
+          {viewingRecord && (
+            <>
+              <DialogHeader className="border-b border-slate-200 px-5 py-4 text-left dark:border-slate-700">
+                <DialogTitle className="text-base">Xem bản ghi</DialogTitle>
+                <DialogDescription>
+                  {getCameraName(viewingRecord)} · {viewingRecord.room} · {viewingRecord.start}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="grid gap-0 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.8fr)]">
+                <div className="bg-black">
+                  <div className="relative aspect-video">
+                    <img src={viewingRecord.img} alt="" className="h-full w-full object-cover opacity-90" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <button
+                        type="button"
+                        className="flex h-14 w-14 items-center justify-center rounded-full bg-white/92 text-blue-600 shadow-xl transition-transform hover:scale-105"
+                        aria-label="Phát bản ghi"
+                      >
+                        <Play size={24} fill="currentColor" />
+                      </button>
+                    </div>
+                    <div className="absolute left-3 top-3 rounded bg-black/60 px-2 py-1 font-mono text-[11px] text-white">
+                      {viewingRecord.start}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4 p-5">
+                  <div>
+                    <div className="text-[12px] font-semibold uppercase tracking-wide text-slate-400">
+                      Thông tin bản ghi
+                    </div>
+                    <div className="mt-2 text-[15px] font-semibold text-slate-900 dark:text-slate-50">
+                      {getCameraName(viewingRecord)}
+                    </div>
+                    <div className="text-[12px] text-slate-500 dark:text-slate-400">
+                      {getCameraDetail(viewingRecord)}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-2 text-[12px]">
+                    <div className="flex justify-between gap-3">
+                      <span className="text-slate-500">Phòng học</span>
+                      <span className="font-medium text-slate-800 dark:text-slate-100">{viewingRecord.room}</span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-slate-500">Bắt đầu</span>
+                      <span className="font-mono text-slate-800 dark:text-slate-100">{viewingRecord.start}</span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-slate-500">Kết thúc</span>
+                      <span className="font-mono text-slate-800 dark:text-slate-100">{viewingRecord.end}</span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-slate-500">Thời lượng</span>
+                      <span className="font-mono text-slate-800 dark:text-slate-100">{viewingRecord.duration}</span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="text-slate-500">Dung lượng</span>
+                      <span className="font-medium text-slate-800 dark:text-slate-100">{viewingRecord.size}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-slate-500">Loại</span>
+                      {typeBadge(viewingRecord.type)}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-blue-600 px-3 py-2 text-[12px] font-medium text-white transition-colors hover:bg-blue-700"
+                    >
+                      <Play size={13} />
+                      Phát
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-[12px] font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      <Download size={13} />
+                      Tải xuống
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-
-
-
