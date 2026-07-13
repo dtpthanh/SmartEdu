@@ -10,9 +10,23 @@ import {
 import { CLASSROOMS } from "../../data/cameras";
 import { roomStatusLabel } from "../../utils/status";
 
+const roomStatusBadgeTextClass: Record<string, string> = {
+  danghoc: "text-emerald-800",
+  sansang: "text-amber-800",
+  khonghoatdong: "!text-[#111827] dark:!text-[#111827]",
+};
+
+const roomStatusInlineTextClass: Record<string, string> = {
+  danghoc: "text-emerald-800 dark:text-emerald-300",
+  sansang: "text-amber-800 dark:text-amber-300",
+  khonghoatdong: "text-slate-700 dark:text-slate-200",
+};
+
 export function ClassroomCard({ room }: { room: typeof CLASSROOMS[number] }) {
   const isInactive = room.status === "khonghoatdong";
   const offlineFeeds = room.feeds.filter(feed => feed !== "online").length;
+  const statusBadgeTextClass = roomStatusBadgeTextClass[room.status] ?? "text-slate-900 dark:text-black";
+  const statusInlineTextClass = roomStatusInlineTextClass[room.status] ?? "text-slate-700 dark:text-slate-200";
 
   const Badge = () => {
     const badgeBaseClass =
@@ -20,7 +34,7 @@ export function ClassroomCard({ room }: { room: typeof CLASSROOMS[number] }) {
 
     if (room.status === "danghoc") {
       return (
-        <span className={`${badgeBaseClass} border-emerald-500/40 bg-stone-100/92 text-slate-800`}>
+        <span className={`${badgeBaseClass} border-emerald-500/40 bg-stone-100/92 ${statusBadgeTextClass}`}>
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
           {roomStatusLabel(room.status)}
         </span>
@@ -29,7 +43,7 @@ export function ClassroomCard({ room }: { room: typeof CLASSROOMS[number] }) {
 
     if (room.status === "sansang") {
       return (
-        <span className={`${badgeBaseClass} border-amber-500/40 bg-stone-100/92 text-slate-800`}>
+        <span className={`${badgeBaseClass} border-amber-500/40 bg-stone-100/92 ${statusBadgeTextClass}`}>
           <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
           {roomStatusLabel(room.status)}
         </span>
@@ -37,7 +51,7 @@ export function ClassroomCard({ room }: { room: typeof CLASSROOMS[number] }) {
     }
 
     return (
-      <span className={`${badgeBaseClass} border-slate-500/40 bg-stone-100/92 text-slate-700`}>
+      <span className={`${badgeBaseClass} border-slate-500/40 bg-stone-100/92 ${statusBadgeTextClass}`}>
         <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
         {roomStatusLabel(room.status)}
       </span>
@@ -98,7 +112,7 @@ export function ClassroomCard({ room }: { room: typeof CLASSROOMS[number] }) {
 
         <div className="mt-1.5 flex items-center justify-between text-[11px] text-gray-500">
           <span>
-            Trang thai: <span className="font-medium text-gray-700">{roomStatusLabel(room.status)}</span>
+            Trang thai: <span className={`font-medium ${statusInlineTextClass}`}>{roomStatusLabel(room.status)}</span>
           </span>
           <span>{offlineFeeds > 0 ? `${offlineFeeds} feed loi` : "On dinh"}</span>
         </div>

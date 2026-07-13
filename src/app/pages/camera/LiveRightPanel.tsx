@@ -16,7 +16,7 @@ export function LiveRightPanel() {
             <Search size={12} className="text-gray-400" />
             <input className="flex-1 text-[11px] outline-none placeholder-gray-400 bg-transparent" placeholder="Tìm kiếm camera..." />
           </div>
-          <button className="w-8 h-8 border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50">
+          <button className="app-icon-btn h-8 w-8 rounded-lg">
             <SlidersHorizontal size={12} className="text-gray-500" />
           </button>
         </div>
@@ -53,21 +53,21 @@ export function LiveRightPanel() {
         <div className="flex justify-center mb-3">
           <div className="grid grid-cols-3 gap-1 w-[90px]">
             <div />
-            <button className="w-7 h-7 bg-gray-100 rounded flex items-center justify-center hover:bg-gray-200">
+            <button className="app-icon-btn h-7 w-7 rounded-lg border-0 bg-gray-100">
               <ChevronUp size={14} className="text-gray-600" />
             </button>
             <div />
-            <button className="w-7 h-7 bg-gray-100 rounded flex items-center justify-center hover:bg-gray-200">
+            <button className="app-icon-btn h-7 w-7 rounded-lg border-0 bg-gray-100">
               <ChevronLeft size={14} className="text-gray-600" />
             </button>
             <button className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center hover:bg-blue-200">
               <div className="w-2 h-2 rounded-full bg-blue-500" />
             </button>
-            <button className="w-7 h-7 bg-gray-100 rounded flex items-center justify-center hover:bg-gray-200">
+            <button className="app-icon-btn h-7 w-7 rounded-lg border-0 bg-gray-100">
               <ChevronRight size={14} className="text-gray-600" />
             </button>
             <div />
-            <button className="w-7 h-7 bg-gray-100 rounded flex items-center justify-center hover:bg-gray-200">
+            <button className="app-icon-btn h-7 w-7 rounded-lg border-0 bg-gray-100">
               <ChevronDown size={14} className="text-gray-600" />
             </button>
             <div />
@@ -78,10 +78,10 @@ export function LiveRightPanel() {
           <div key={ctrl} className="flex items-center justify-between mb-1.5">
             <span className="text-gray-600 w-12">{ctrl}</span>
             <div className="flex-1 flex justify-end gap-6">
-              <button className="w-6 h-6 border border-gray-200 rounded flex items-center justify-center hover:bg-gray-50 text-gray-600 font-bold">
+              <button className="app-icon-btn h-6 w-6 rounded-md text-gray-600">
                 <Plus size={12} />
               </button>
-              <button className="w-6 h-6 border border-gray-200 rounded flex items-center justify-center hover:bg-gray-50 text-gray-600 font-bold">
+              <button className="app-icon-btn h-6 w-6 rounded-md text-gray-600">
                 <Minus size={12} />
               </button>
             </div>
@@ -117,7 +117,7 @@ export function LiveRightPanel() {
             { icon: <Settings size={18} />, label: "Cài đặt" },
           ].map(item => (
             <button key={item.label} className="flex flex-col items-center gap-1.5 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <span className="text-gray-600">{item.icon}</span>
+              <span className="app-icon-tile bg-gray-50 text-gray-600">{item.icon}</span>
               <span className="text-[10px] text-gray-600">{item.label}</span>
             </button>
           ))}

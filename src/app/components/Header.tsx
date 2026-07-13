@@ -121,7 +121,7 @@ export function Header({ isDarkMode, onToggleCollapse, onToggleTheme }: HeaderPr
   };
 
   return (
-    <header className="flex h-[72px] flex-shrink-0 items-center gap-4 border-b border-slate-200/80 bg-white/90 px-5 shadow-[0_10px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-950/75 dark:shadow-[0_14px_40px_rgba(2,6,23,0.55)]">
+    <header className="flex h-[68px] flex-shrink-0 items-center gap-4 border-b border-slate-200/80 bg-white/82 px-5 shadow-[0_10px_28px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-slate-700/70 dark:bg-card/95 dark:shadow-none">
       <button
         onClick={onToggleCollapse}
         className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-transparent bg-transparent text-slate-500 transition-all hover:border-slate-200 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-slate-800/90 dark:hover:text-white"
@@ -131,7 +131,7 @@ export function Header({ isDarkMode, onToggleCollapse, onToggleTheme }: HeaderPr
       </button>
 
       <div className="min-w-0 flex-shrink">
-        <div className="truncate text-[22px] font-bold uppercase tracking-[0.1em] text-slate-900 dark:text-slate-50">
+        <div className="truncate text-[20px] font-bold uppercase tracking-[0.12em] text-slate-900 dark:text-slate-50">
           {pageTitle}
         </div>
       </div>
@@ -163,7 +163,7 @@ export function Header({ isDarkMode, onToggleCollapse, onToggleTheme }: HeaderPr
         </PopoverTrigger>
         <PopoverContent
           align="end"
-          className="w-[360px] border-slate-200/80 bg-white/95 p-0 shadow-[0_24px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-950/95 dark:shadow-[0_24px_60px_rgba(2,6,23,0.7)]"
+          className="w-[360px] border-slate-200/80 bg-white/95 p-0 shadow-[0_24px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl dark:border-slate-700/70 dark:bg-card/95 dark:shadow-none"
         >
           <div className="border-b border-slate-200/80 px-4 py-3 dark:border-slate-700/60">
             <div className="flex items-center justify-between gap-3">
@@ -219,7 +219,7 @@ export function Header({ isDarkMode, onToggleCollapse, onToggleTheme }: HeaderPr
         </PopoverContent>
       </Popover>
 
-      <div className="flex items-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white px-3 py-1.5 text-[12px] text-slate-600 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/90 dark:text-slate-200">
+      <div className="flex items-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white/92 px-3 py-1.5 text-[12px] text-slate-600 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/90 dark:text-slate-200">
         <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800">
           <Monitor size={10} className="text-slate-500 dark:text-slate-300" />
         </div>
@@ -241,7 +241,7 @@ export function Header({ isDarkMode, onToggleCollapse, onToggleTheme }: HeaderPr
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"
-          className="w-64 border-slate-200/80 bg-white/95 shadow-[0_24px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-950/95 dark:shadow-[0_24px_60px_rgba(2,6,23,0.7)]"
+          className="w-64 border-slate-200/80 bg-white/95 shadow-[0_24px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl dark:border-slate-700/70 dark:bg-card/95 dark:shadow-none"
         >
           <DropdownMenuLabel className="pb-1">
             <div className="text-sm font-semibold">admin</div>

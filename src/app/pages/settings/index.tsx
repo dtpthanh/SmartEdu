@@ -5,10 +5,11 @@ import {
   Shield, Key, Server, Cloud, Wifi, Thermometer,
   HardDrive, Camera, Volume2, Video, AlertTriangle,
   Check, X, Plus, Minus, Save, RotateCcw, Download,
-  FileArchive, Activity, Settings, Info, ChevronRight,
+  FileArchive, Activity, Settings, Info, ChevronRight, MoreHorizontal as MoreHorizontalIcon,
   GraduationCap, Wrench, Users, UserCheck, Phone, CalendarDays, School,
 } from "lucide-react";
 import smartEduLogo from "../../../assets/logo.png";
+import { PageTabs } from "../../components/PageTabs";
 
 type SettingsTab = "general" | "recording" | "notification" | "system";
 
@@ -50,7 +51,7 @@ function FormRow({ label, children, required }: { label: string; children: React
 
 function SectionCard({ title, subtitle, children, className = "" }: { title: string; subtitle?: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`bg-white rounded-xl border border-gray-900/15 shadow-sm p-5 ${className}`}>
+    <div className={`app-surface p-5 ${className}`}>
       <div className="mb-4">
         <div className="text-[14px] font-bold uppercase tracking-[0.08em] text-gray-800">{title}</div>
         {subtitle && <div className="text-[11px] text-gray-400 mt-0.5">{subtitle}</div>}
@@ -533,7 +534,7 @@ function NotificationTab() {
                       </td>
                     ))}
                     <td className="px-2 py-2.5">
-                      <button className="text-gray-400 hover:text-gray-600"><MoreHorizontal size={14} /></button>
+                      <button className="app-icon-btn"><MoreHorizontalIcon size={14} /></button>
                     </td>
                   </tr>
                 ))}
@@ -650,14 +651,6 @@ const ACTIVITY_LOG = [
   { time: "28/04/2026 14:33:47", icon: <Zap size={13} />,      bg: "bg-orange-100", color: "text-orange-600", type: "Tích hợp",         desc: "Cập nhật cấu hình SMTP", by: "admin" },
   { time: "28/04/2026 10:22:11", icon: <Settings size={13} />, bg: "bg-blue-100",   color: "text-blue-600",  type: "Cài đặt hệ thống",  desc: "Thay đổi thời gian tự động đăng xuất", by: "admin" },
 ];
-
-function MoreHorizontal({ size, className }: { size: number; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
-    </svg>
-  );
-}
 
 function SystemTab() {
   const integrations = [
@@ -852,16 +845,9 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="p-4">
+    <div className="app-page">
       <div className="mb-4">
-        <div className="flex">
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`px-5 py-3 text-[11px] font-semibold uppercase tracking-wide border-b-2 transition-colors ${tab === t.id ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <PageTabs tabs={TABS} activeTab={tab} onChange={setTab} ariaLabel="Nhóm cài đặt" />
       </div>
 
       {tab === "general"      && <GeneralTab />}

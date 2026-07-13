@@ -245,9 +245,9 @@ export default function AnalyticsPage() {
   ];
 
   return (
-    <div className="p-4">
+    <div className="app-page">
       {/* Sub-filter bar */}
-      <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm px-4 py-3 mb-4 flex items-center gap-3">
+      <div className="app-toolbar mb-4 flex flex-wrap items-center gap-3 px-4 py-3">
         <div className="flex flex-col gap-0.5">
           <div className="text-[10px] text-gray-400">Phòng học</div>
           <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-gray-700 hover:bg-gray-50">
@@ -269,7 +269,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-5 gap-3 mb-4">
+      <div className="app-grid-stats mb-4">
         {stats.map(s=>(
           <div key={s.label} className="rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm" style={{ backgroundColor: COLORS[s.bg] ?? "#4285F4" }}>
             <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
@@ -289,9 +289,9 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Row 1: 4 sections */}
-      <div className="flex gap-4 mb-4">
+      <div className="mb-4 grid grid-cols-1 gap-4 xl:grid-cols-[180px_minmax(0,1fr)] 2xl:grid-cols-[180px_minmax(0,1fr)_220px_230px]">
         {/* Room info */}
-        <div className="w-[180px] flex-shrink-0 bg-white rounded-xl border border-gray-900/15 shadow-sm overflow-hidden">
+        <div className="app-surface w-full overflow-hidden">
           <div className="text-[12px] font-bold text-gray-800 px-3 pt-3 pb-2 border-b border-gray-50">Thông tin phòng học</div>
           <div className="relative">
             <img src="https://images.unsplash.com/photo-1509062522246-3755977927d7?w=300&q=65" alt="room" className="w-full h-[110px] object-cover"/>
@@ -309,7 +309,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Attention chart */}
-        <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-900/15 shadow-sm p-3">
+        <div className="flex-1 min-w-0 app-surface p-3">
           <div className="flex items-center justify-between mb-1">
             <div className="text-[12px] font-bold text-gray-800">Mức độ tập trung theo thời gian</div>
             <button className="flex items-center gap-1 border border-gray-200 rounded px-2 py-1 text-[11px] text-gray-600 hover:bg-gray-50">
@@ -325,16 +325,16 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Heatmap */}
-        <div className="w-[220px] flex-shrink-0 bg-white rounded-xl border border-gray-900/15 shadow-sm p-3">
+        <div className="app-surface w-full p-3">
           <div className="flex items-center justify-between mb-2">
             <div className="text-[12px] font-bold text-gray-800">Heatmap tập trung</div>
-            <button className="flex items-center gap-1 text-gray-400 hover:text-gray-600"><Maximize2 size={13}/></button>
+            <button className="app-icon-btn h-7 w-7 rounded-lg"><Maximize2 size={13}/></button>
           </div>
           <Heatmap/>
         </div>
 
         {/* Events */}
-        <div className="w-[230px] flex-shrink-0 bg-white rounded-xl border border-gray-900/15 shadow-sm p-3">
+        <div className="app-surface w-full p-3">
           <div className="flex items-center justify-between mb-2">
             <div className="text-[12px] font-bold text-gray-800">Sự kiện nổi bật</div>
             <button className="text-[11px] text-blue-500 hover:underline">Xem tất cả</button>
@@ -342,7 +342,7 @@ export default function AnalyticsPage() {
           <div className="space-y-2.5">
             {EVENTS.map((e,i)=>(
               <div key={i} className="flex items-start gap-2">
-                <div className={`w-6 h-6 rounded-full ${e.bg} ${e.color} flex items-center justify-center flex-shrink-0 mt-0.5`}>{e.icon}</div>
+                <div className={`app-icon-badge rounded-full ${e.bg} ${e.color} flex-shrink-0 mt-0.5`}>{e.icon}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-[11px] font-medium text-gray-800 truncate">{e.title}</span>
@@ -358,15 +358,15 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Row 2: 3 sections */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      <div className="mb-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
         {/* Behavior donut */}
-        <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-4">
+        <div className="app-surface p-4">
           <div className="text-[12px] font-bold text-gray-800 mb-3">Phân tích hành vi theo danh mục</div>
           <BehaviorDonut/>
         </div>
 
         {/* Student top 10 */}
-        <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-4">
+        <div className="app-surface p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="text-[12px] font-bold text-gray-800">Mức độ tập trung theo học sinh (Top 10)</div>
             <button className="flex items-center gap-1 border border-gray-200 rounded px-2 py-1 text-[11px] text-gray-600 hover:bg-gray-50">
@@ -410,7 +410,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Noise chart */}
-        <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-4">
+        <div className="app-surface p-4">
           <div className="flex items-center justify-between mb-1">
             <div className="text-[12px] font-bold text-gray-800">Biểu đồ mức độ ồn</div>
             <button className="flex items-center gap-1 border border-gray-200 rounded px-2 py-1 text-[11px] text-gray-600 hover:bg-gray-50">
@@ -428,9 +428,9 @@ export default function AnalyticsPage() {
       {/* Row 3: AI insights */}
       <div className="grid grid-cols-2 gap-4">
         {/* AI assessment */}
-        <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-4">
+        <div className="app-surface p-4">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <div className="app-icon-tile h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600">
               <Brain size={20} className="text-blue-600"/>
             </div>
             <div className="flex-1">
@@ -448,14 +448,14 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Suggestions */}
-        <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-4">
+        <div className="app-surface p-4">
           <div className="text-[12px] font-bold text-gray-800 mb-3 flex items-center gap-2">
             <Lightbulb size={15} className="text-yellow-500"/> Gợi ý cải thiện
           </div>
           <div className="grid grid-cols-2 gap-3">
             {SUGGESTIONS.map(s=>(
               <div key={s.title} className="flex items-start gap-2.5 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors">
-                <div className={`w-8 h-8 rounded-lg ${s.bg} ${s.color} flex items-center justify-center flex-shrink-0`}>{s.icon}</div>
+                <div className={`app-icon-tile ${s.bg} ${s.color} flex-shrink-0`}>{s.icon}</div>
                 <div>
                   <div className="text-[11px] font-semibold text-gray-800">{s.title}</div>
                   <div className="text-[10px] text-gray-500 mt-0.5 leading-tight">{s.desc}</div>

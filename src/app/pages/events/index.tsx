@@ -80,8 +80,8 @@ function Pager({ total, unit, last }: { total: number; unit: string; last: numbe
 function ActionBtns() {
   return (
     <div className="flex items-center gap-1">
-      <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center text-gray-400 hover:text-blue-500 hover:border-blue-300 transition-colors"><Eye size={12} /></button>
-      <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors"><MoreHorizontal size={12} /></button>
+      <button className="app-icon-btn"><Eye size={12} /></button>
+      <button className="app-icon-btn"><MoreHorizontal size={12} /></button>
     </div>
   );
 }
@@ -90,7 +90,7 @@ function ActionBtns() {
 function EventChart() {
   const maxTotal = Math.max(...CHART_DATA.map(d => d.cao + d.tb + d.thap));
   return (
-    <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-4 mb-4">
+    <div className="app-surface p-4 mb-4">
       <div className="flex items-center justify-between mb-3">
         <div className="text-[13px] font-bold text-gray-800">Sự kiện theo thời gian</div>
         <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-gray-600 hover:bg-gray-50">
@@ -149,7 +149,7 @@ function EventChart() {
 // ── Main events table ─────────────────────────────────────────────────────────
 function EventsTable({ onSelect }: { onSelect: () => void }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm overflow-hidden">
+    <div className="app-surface overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-900/15">
         <div className="text-[13px] font-bold text-gray-800">
           Danh sách sự kiện <span className="text-gray-400 font-normal">(156)</span>
@@ -199,7 +199,7 @@ function EventsTable({ onSelect }: { onSelect: () => void }) {
 // ── History table ─────────────────────────────────────────────────────────────
 function HistoryTable({ onSelect }: { onSelect: () => void }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm overflow-hidden">
+    <div className="app-surface overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-900/15">
         <div>
           <div className="text-[13px] font-bold text-gray-800">Lịch sử xử lý sự kiện <span className="text-gray-400 font-normal">(72)</span></div>
@@ -212,7 +212,7 @@ function HistoryTable({ onSelect }: { onSelect: () => void }) {
           </div>
           <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-gray-600 hover:bg-gray-50">Tất cả kết quả <ChevronDown size={11} className="text-gray-400" /></button>
           <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-gray-600 hover:bg-gray-50">Mới nhất <ChevronDown size={11} className="text-gray-400" /></button>
-          <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center hover:bg-gray-50"><Download size={13} className="text-gray-500" /></button>
+          <button className="app-icon-btn"><Download size={13} /></button>
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -514,7 +514,7 @@ function RightPanel({ onClose }: { onClose: () => void }) {
     { id: "log"   as PanelTab, label: "Lịch sử xử lý (3)" },
   ];
   return (
-    <div className="w-[280px] flex-shrink-0 bg-white rounded-xl border border-gray-900/15 shadow-sm flex flex-col self-start max-h-[calc(100vh-140px)] overflow-hidden">
+    <div className="app-surface flex max-h-[calc(100vh-140px)] w-full flex-shrink-0 flex-col self-start overflow-hidden 2xl:w-[280px]">
       {/* Header */}
       <div className="flex items-start justify-between px-3 pt-3 pb-2 border-b border-gray-900/15 flex-shrink-0">
         <div className="flex-1 min-w-0">
@@ -532,7 +532,7 @@ function RightPanel({ onClose }: { onClose: () => void }) {
             {statusBadge(EVENT_DETAIL.status)}
           </div>
         </div>
-        <button onClick={onClose} className="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0 ml-2">
+        <button onClick={onClose} className="app-icon-btn ml-2 flex-shrink-0">
           <X size={14} />
         </button>
       </div>
@@ -572,9 +572,9 @@ export default function EventsPage() {
   ];
 
   return (
-    <div className="p-4">
+    <div className="app-page">
       {/* Filter bar */}
-      <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-3 mb-4">
+      <div className="app-toolbar mb-4 p-3">
         <div className="flex items-center gap-2">
           {["Tất cả sự kiện", "Tất cả mức độ", "Tất cả trạng thái"].map(f => (
             <button key={f} className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-gray-600 hover:bg-gray-50 whitespace-nowrap">
@@ -591,7 +591,7 @@ export default function EventsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-6 gap-3 mb-4">
+      <div className="grid grid-cols-1 gap-3 mb-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         {stats.map(s => {
           const G: Record<string,string> = {
             "bg-blue-50":   "#4285F4",
@@ -624,7 +624,7 @@ export default function EventsPage() {
       </div>
 
       {/* Content + right panel */}
-      <div className="flex gap-4 items-start">
+      <div className="flex flex-col items-start gap-4 2xl:flex-row">
         <div className="flex-1 min-w-0">
           {mainView === "list" && (
             <>

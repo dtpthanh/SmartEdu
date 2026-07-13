@@ -1,12 +1,12 @@
 ﻿import { useState } from "react";
 import {
   Search, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight,
-  Users, UserCheck, Camera, Wrench, ArrowRight,
-  TrendingUp, Volume2, Activity, AlertTriangle, WifiOff,
-  CalendarDays, School,
+  Users, UserCheck, Wrench, ArrowRight, Plus,
+  Volume2, Activity, AlertTriangle, WifiOff,
+  School,
 } from "lucide-react";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { StatCard } from "../../components/StatCard";
+import { AddEntityDialog } from "../../components/AddEntityDialog";
 import { ROOMS, RECENT_ACTIVITIES, ATTENTION_ROOMS, type Room } from "../../data/rooms";
 
 // ── Status helpers ────────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ function activityIcon(type: string) {
 function RoomCard({ room }: { room: Room }) {
   const isInactive = room.status === "khonghoatdong";
   return (
-    <div className="bg-white rounded-xl border border-gray-900/15 overflow-hidden shadow-sm">
+    <div className="app-surface overflow-hidden">
       <div className="relative">
         <img src={room.img} alt={room.name}
           className={`w-full h-[150px] object-cover ${isInactive ? "grayscale opacity-50" : ""}`} />
@@ -85,56 +85,27 @@ function RoomCard({ room }: { room: Room }) {
   );
 }
 
-// ── Donut chart ───────────────────────────────────────────────────────────────
-const PIE_DATA = [
-  { name: "Đang hoạt động", value: 186, color: "#34A853" },
-  { name: "Không hoạt động", value: 38,  color: "#94a3b8" },
-  { name: "Bảo trì",         value: 16,  color: "#FBBC05" },
-  { name: "Cần chú ý",       value: 16,  color: "#EA4335" },
+const ROOM_PAGE_ITEMS: Room[] = [
+  ...ROOMS,
+  ...ROOMS.map((room, index) => {
+    const extraRooms = [
+      { id: "A103", name: "A103 - Lớp 10A3", status: "hoatdong" as const, students: "44/45", attention: 81, cameras: 2, devices: 8 },
+      { id: "A104", name: "A104 - Lớp 10A4", status: "chuy" as const, students: "39/42", attention: 52, cameras: 2, devices: 7 },
+      { id: "B103", name: "B103 - Lớp 11B3", status: "hoatdong" as const, students: "41/41", attention: 84, cameras: 2, devices: 9 },
+      { id: "B104", name: "B104 - Lớp 11B4", status: "baotri" as const, students: "36/40", attention: 60, cameras: 1, devices: 6 },
+      { id: "C203", name: "C203 - Lớp 12C3", status: "hoatdong" as const, students: "42/44", attention: 79, cameras: 2, devices: 8 },
+      { id: "C204", name: "C204 - Lớp 12C4", status: "khonghoatdong" as const, students: "0/38", attention: 0, cameras: 2, devices: 6 },
+    ];
+    return { ...room, ...extraRooms[index] };
+  }),
 ];
-
-function StatusDonut() {
-  return (
-    <div className="p-3 border-b border-gray-900/15">
-      <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Tổng quan trạng thái</div>
-      <div className="relative flex justify-center">
-        <ResponsiveContainer width="100%" height={180}>
-          <PieChart>
-            <Pie data={PIE_DATA} cx="50%" cy="50%" innerRadius={55} outerRadius={80}
-              dataKey="value" startAngle={90} endAngle={-270} strokeWidth={2}>
-              {PIE_DATA.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-            </Pie>
-            <Tooltip formatter={(v: number) => [`${v} phòng`]} />
-          </PieChart>
-        </ResponsiveContainer>
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <div className="text-2xl font-bold text-gray-800">256</div>
-          <div className="text-[10px] text-gray-400 text-center leading-tight">Tổng phòng<br />học</div>
-        </div>
-      </div>
-      <div className="space-y-1.5 mt-1">
-        {PIE_DATA.map(d => (
-          <div key={d.name} className="flex items-center justify-between text-[11px]">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: d.color }} />
-              <span className="text-gray-600">{d.name}</span>
-            </span>
-            <span className="font-semibold text-gray-700">{d.value} <span className="text-gray-400 font-normal">({((d.value/256)*100).toFixed(1)}%)</span></span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ── Right panel ───────────────────────────────────────────────────────────────
 function RightPanel() {
   return (
-    <div className="w-[260px] flex-shrink-0 bg-white rounded-xl border border-gray-900/15 shadow-sm overflow-hidden self-start">
-      <StatusDonut />
-
+    <div className="mt-4 grid w-full grid-cols-1 gap-4 xl:grid-cols-2">
       {/* Recent activity */}
-      <div className="p-3 border-b border-gray-900/15">
+      <div className="app-surface h-full p-3">
         <div className="flex items-center justify-between mb-2">
           <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Hoạt động gần đây</div>
           <button className="text-[11px] text-blue-500 hover:underline">Xem tất cả</button>
@@ -156,7 +127,7 @@ function RightPanel() {
       </div>
 
       {/* Attention rooms */}
-      <div className="p-3">
+      <div className="app-surface h-full p-3">
         <div className="flex items-center justify-between mb-2">
           <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Phòng học cần chú ý</div>
           <button className="text-[11px] text-blue-500 hover:underline">Xem tất cả</button>
@@ -190,7 +161,7 @@ function Pagination() {
   const [page, setPage] = useState(1);
   return (
     <div className="flex items-center justify-between mt-4 text-[12px] text-gray-500">
-      <span>Hiển thị 1 - 6 trong tổng số 256 phòng học</span>
+      <span>Hiển thị 1 - 12 trong tổng số 256 phòng học</span>
       <div className="flex items-center gap-1">
         <button disabled={page === 1} onClick={() => setPage(p => Math.max(1, p-1))}
           className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center hover:bg-gray-50 disabled:opacity-40">
@@ -212,7 +183,7 @@ function Pagination() {
           <ChevronRight size={13} />
         </button>
         <div className="flex items-center gap-1 ml-2 border border-gray-200 rounded px-2 py-1">
-          <span>6 / trang</span>
+          <span>12 / trang</span>
           <ChevronDown size={11} className="text-gray-400" />
         </div>
       </div>
@@ -222,31 +193,51 @@ function Pagination() {
 
 // ── Rooms Page ────────────────────────────────────────────────────────────────
 export default function RoomsPage() {
+  const [rooms, setRooms] = useState<Room[]>(ROOM_PAGE_ITEMS);
+  const [isAddOpen, setIsAddOpen] = useState(false);
   const stats = [
     { icon: <School size={18} />,      count: 256, label: "Tổng phòng học",        sub: "100%",   iconBg: "bg-blue-50",   iconColor: "text-blue-500" },
-    { icon: <Activity size={18} />,    count: 186, label: "Phòng đang hoạt động",  sub: "72.7%",  iconBg: "bg-green-50",  iconColor: "text-green-500" },
+    { icon: <Activity size={18} />,    count: 186, label: "Đang hoạt động",  sub: "72.7%",  iconBg: "bg-green-50",  iconColor: "text-green-500" },
     { icon: <WifiOff size={18} />,     count: 38,  label: "Không hoạt động",       sub: "14.8%",  iconBg: "bg-gray-100",  iconColor: "text-gray-500" },
     { icon: <Wrench size={18} />,      count: 16,  label: "Bảo trì",               sub: "6.3%",   iconBg: "bg-yellow-50", iconColor: "text-yellow-500" },
     { icon: <AlertTriangle size={18} />, count: 16, label: "Cần chú ý",            sub: "6.3%",   iconBg: "bg-red-50",    iconColor: "text-red-500" },
   ];
 
+  function handleAddRoom(values: Record<string, string>) {
+    const id = values.id || `ROOM-${Date.now().toString().slice(-4)}`;
+    const room: Room = {
+      id,
+      name: values.name || `${id} - Lớp mới`,
+      status: "hoatdong",
+      students: values.students || "0/40",
+      teacher: values.teacher || "Chưa phân công",
+      attention: 0,
+      noise: ROOMS[0]?.noise ?? "Thấp",
+      cameras: Number(values.cameras || 0),
+      devices: Number(values.devices || 0),
+      img: values.img || "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&q=70",
+    };
+
+    setRooms(current => [room, ...current]);
+  }
+
   return (
-    <div className="p-4">
+    <div className="app-page">
       {/* Stats */}
-      <div className="grid grid-cols-5 gap-3 mb-4">
+      <div className="app-grid-stats mb-4">
         {stats.map(s => (
           <StatCard key={s.label} icon={s.icon} count={s.count} label={s.label}
             sub={s.sub} iconBg={s.iconBg} iconColor={s.iconColor} />
         ))}
       </div>
 
-      {/* Content + right panel */}
-      <div className="flex gap-4 items-start">
+      {/* Content */}
+      <div>
         <div className="flex-1 min-w-0">
           {/* Section header + filters */}
-          <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm mb-4 px-4 py-3">
-            <div className="text-[13px] font-bold text-gray-800 mb-3">Danh sách phòng học</div>
-            <div className="flex items-center gap-2">
+          <div className="app-toolbar mb-4 px-4 py-3">
+            <div className="text-[17px] font-bold text-gray-800 mb-3">Danh sách phòng học</div>
+            <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-2 flex-1 border border-gray-200 rounded-lg px-3 py-1.5">
                 <Search size={13} className="text-gray-400 flex-shrink-0" />
                 <input className="flex-1 text-[12px] outline-none placeholder-gray-400 bg-transparent"
@@ -260,22 +251,43 @@ export default function RoomsPage() {
               <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-gray-600 bg-white hover:bg-gray-50">
                 <SlidersHorizontal size={13} /> Bộ lọc
               </button>
+              <button
+                type="button"
+                className="app-primary-action ml-auto flex items-center gap-1.5 rounded-lg px-[15px] py-[9px] text-[12px] font-medium"
+                onClick={() => setIsAddOpen(true)}
+              >
+                <Plus size={16} /> Thêm phòng học
+              </button>
             </div>
           </div>
 
           {/* Room cards grid */}
-          <div className="grid grid-cols-3 gap-4">
-            {ROOMS.map(room => <RoomCard key={room.id} room={room} />)}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {rooms.map(room => <RoomCard key={room.id} room={room} />)}
           </div>
 
           <Pagination />
+          <RightPanel />
         </div>
 
-        <RightPanel />
       </div>
+      <AddEntityDialog
+        open={isAddOpen}
+        title="Thêm phòng học"
+        description="Tạo phòng học mới và hiển thị ngay trong danh sách."
+        submitLabel="Lưu phòng học"
+        onOpenChange={setIsAddOpen}
+        onSubmit={handleAddRoom}
+        fields={[
+          { name: "id", label: "Mã phòng", placeholder: "A105", required: true },
+          { name: "name", label: "Tên phòng", placeholder: "A105 - Lớp 10A5", required: true },
+          { name: "teacher", label: "Giáo viên phụ trách", placeholder: "Nguyễn Văn An" },
+          { name: "students", label: "Sĩ số", placeholder: "40/45" },
+          { name: "cameras", label: "Số camera", type: "number", defaultValue: "2" },
+          { name: "devices", label: "Số thiết bị", type: "number", defaultValue: "8" },
+          { name: "img", label: "Ảnh phòng học", placeholder: "https://..." },
+        ]}
+      />
     </div>
   );
 }
-
-
-

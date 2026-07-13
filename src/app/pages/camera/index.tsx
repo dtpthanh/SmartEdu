@@ -1,7 +1,8 @@
 ﻿import { useState } from "react";
-import { Activity, AlertCircle, ChevronDown, Map, Monitor, RadioTower, School, Search, Target, TriangleAlert, WifiOff, Wrench } from "lucide-react";
+import { Activity, Map, Monitor, RadioTower, School, Search, TriangleAlert, WifiOff, Wrench } from "lucide-react";
 import { CAMERAS, CLASSROOMS } from "../../data/cameras";
 import { StatCard } from "../../components/StatCard";
+import { PageTabs } from "../../components/PageTabs";
 import { CameraCard } from "./CameraCard";
 import { ClassroomCard } from "./ClassroomCard";
 
@@ -84,26 +85,12 @@ function PageHeader({ tab, setTab }: { tab: TabType; setTab: (t: TabType) => voi
 
   return (
     <div className="mb-4">
-      <div className="flex">
-        {tabs.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`px-4 py-3 text-[11px] font-semibold uppercase tracking-wide border-b-2 transition-colors ${
-              tab === t.id
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <PageTabs tabs={tabs} activeTab={tab} onChange={setTab} ariaLabel="Chế độ xem camera" />
     </div>
   );
 }
 
-function StatsRow() {
+function StatsRow({ status, onStatusChange }: { status: CameraStatus; onStatusChange: (status: CameraStatus) => void }) {
   const total = CAMERAS.length;
   const live = CAMERAS.filter(cam => cam.status === "live").length;
   const offline = CAMERAS.filter(cam => cam.status === "offline").length;
@@ -111,12 +98,34 @@ function StatsRow() {
   const loi = CAMERAS.filter(cam => cam.status === "loi").length;
 
   return (
-    <div className="grid grid-cols-1 gap-3 mb-4 md:grid-cols-2 xl:grid-cols-5">
-      <StatCard icon={<Monitor size={18} />} count={total} label="Tổng camera" sub="Tất cả" iconBg="bg-blue-50" iconColor="text-blue-500" />
-      <StatCard icon={<RadioTower size={18} />} count={live} label="Đang hoạt động" sub={`${Math.round((live / total) * 100)}%`} iconBg="bg-green-50" iconColor="text-green-500" />
-      <StatCard icon={<WifiOff size={18} />} count={offline} label="Offline" sub={`${Math.round((offline / total) * 100)}%`} iconBg="bg-gray-100" iconColor="text-gray-500" />
-      <StatCard icon={<Wrench size={18} />} count={baotri} label="Bảo trì" sub={`${Math.round((baotri / total) * 100)}%`} iconBg="bg-yellow-50" iconColor="text-yellow-500" />
-      <StatCard icon={<TriangleAlert size={18} />} count={loi} label="Lỗi" sub={`${Math.round((loi / total) * 100)}%`} iconBg="bg-red-50" iconColor="text-red-500" />
+    <div className="app-grid-stats mb-4">
+      <StatCard onClick={() => onStatusChange("all")} active={status === "all"} icon={<Monitor size={18} />} count={total} label="Tổng camera" sub="Tất cả" iconBg="bg-blue-50" iconColor="text-blue-500" />
+      <StatCard onClick={() => onStatusChange("live")} active={status === "live"} icon={<RadioTower size={18} />} count={live} label="Đang hoạt động" sub={`${Math.round((live / total) * 100)}%`} iconBg="bg-green-50" iconColor="text-green-500" />
+      <StatCard onClick={() => onStatusChange("offline")} active={status === "offline"} icon={<WifiOff size={18} />} count={offline} label="Offline" sub={`${Math.round((offline / total) * 100)}%`} iconBg="bg-gray-100" iconColor="text-gray-500" />
+      <StatCard onClick={() => onStatusChange("loi")} active={status === "loi"} icon={<TriangleAlert size={18} />} count={loi} label="Lỗi" sub={`${Math.round((loi / total) * 100)}%`} iconBg="bg-red-50" iconColor="text-red-500" />
+      <StatCard onClick={() => onStatusChange("baotri")} active={status === "baotri"} icon={<Wrench size={18} />} count={baotri} label="Bảo trì" sub={`${Math.round((baotri / total) * 100)}%`} iconBg="bg-yellow-50" iconColor="text-yellow-500" />
+    </div>
+  );
+}
+
+function ClassroomStatsRow({
+  status,
+  onStatusChange,
+}: {
+  status: ClassroomStatus;
+  onStatusChange: (status: ClassroomStatus) => void;
+}) {
+  const total = CLASSROOMS.length;
+  const danghoc = CLASSROOMS.filter(room => room.status === "danghoc").length;
+  const sansang = CLASSROOMS.filter(room => room.status === "sansang").length;
+  const khonghoatdong = CLASSROOMS.filter(room => room.status === "khonghoatdong").length;
+
+  return (
+    <div className="app-grid-stats mb-4">
+      <StatCard onClick={() => onStatusChange("all")} active={status === "all"} icon={<School size={18} />} count={total} label="Tổng phòng học" sub="Tất cả" iconBg="bg-blue-50" iconColor="text-blue-500" />
+      <StatCard onClick={() => onStatusChange("danghoc")} active={status === "danghoc"} icon={<Activity size={18} />} count={danghoc} label="Đang học" sub={`${Math.round((danghoc / total) * 100)}%`} iconBg="bg-green-50" iconColor="text-green-500" />
+      <StatCard onClick={() => onStatusChange("sansang")} active={status === "sansang"} icon={<RadioTower size={18} />} count={sansang} label="Sẵn sàng" sub={`${Math.round((sansang / total) * 100)}%`} iconBg="bg-amber-50" iconColor="text-amber-500" />
+      <StatCard onClick={() => onStatusChange("khonghoatdong")} active={status === "khonghoatdong"} icon={<WifiOff size={18} />} count={khonghoatdong} label="Không hoạt động" sub={`${Math.round((khonghoatdong / total) * 100)}%`} iconBg="bg-gray-100" iconColor="text-gray-500" />
     </div>
   );
 }
@@ -144,7 +153,7 @@ function LiveToolbar({
   resultCount: number;
 }) {
   return (
-    <div className="mb-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="app-toolbar mb-4 p-4">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2.5 focus-within:border-blue-300">
@@ -192,7 +201,7 @@ function ClassroomToolbar({
   resultCount: number;
 }) {
   return (
-    <div className="mb-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="app-toolbar mb-4 p-4">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2.5 focus-within:border-blue-300">
@@ -300,9 +309,13 @@ export default function CameraPage() {
   const showGroupedLayout = statusFilter !== "all";
 
   return (
-    <div className="p-4">
+    <div className="app-page">
       <PageHeader tab={tab} setTab={setTab} />
-      <StatsRow />
+      {tab === "classroom" ? (
+        <ClassroomStatsRow status={classroomStatusFilter} onStatusChange={setClassroomStatusFilter} />
+      ) : (
+        <StatsRow status={statusFilter} onStatusChange={setStatusFilter} />
+      )}
 
       {tab === "live" && (
         <div>

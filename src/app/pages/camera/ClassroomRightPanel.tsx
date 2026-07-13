@@ -19,7 +19,7 @@ export function ClassroomRightPanel() {
             <Search size={12} className="text-gray-400" />
             <input className="flex-1 text-[11px] outline-none placeholder-gray-400 bg-transparent" placeholder="Tìm kiếm phòng học..." />
           </div>
-          <button className="w-8 h-8 border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50">
+          <button className="app-icon-btn h-8 w-8 rounded-lg">
             <SlidersHorizontal size={12} className="text-gray-500" />
           </button>
         </div>
@@ -75,7 +75,7 @@ export function ClassroomRightPanel() {
             { icon: <Download size={18} />,   label: "Xuất danh sách" },
           ].map(item => (
             <button key={item.label} className="flex flex-col items-center gap-1.5 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <span className="text-blue-600">{item.icon}</span>
+              <span className="app-icon-tile bg-blue-50 text-blue-600">{item.icon}</span>
               <span className="text-[10px] text-gray-600 text-center leading-tight">{item.label}</span>
             </button>
           ))}

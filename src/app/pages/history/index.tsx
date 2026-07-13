@@ -6,10 +6,11 @@ import {
   ImageIcon, LayoutGrid, Maximize2, Volume2,
   SkipBack, SkipForward, Trash2, Folder,
   MessageCircle, Smartphone, DoorOpen, UserX, Megaphone,
-  CalendarDays, School, HardDrive, Pause,
+  CalendarDays, School, HardDrive, Pause, TriangleAlert,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { REC_CAMERAS, REC_LIST, EVENTS, DOWNLOADS } from "../../data/recordings";
+import { PageTabs } from "../../components/PageTabs";
 
 type HistoryTab = "time" | "event" | "download";
 type DownloadSubTab = "list" | "history";
@@ -85,9 +86,9 @@ function RightFilterPanel() {
     { value: 318, color: "#e2e8f0" },
   ];
   return (
-    <div className="w-[240px] flex-shrink-0 space-y-0">
+    <div className="w-full flex-shrink-0 space-y-0 2xl:w-[240px]">
       {/* Filter */}
-      <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-3 mb-3">
+      <div className="app-surface p-3 mb-3">
         <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Bộ lọc tìm kiếm</div>
         {[{ label: "Phòng học", placeholder: "Tất cả phòng học" }, { label: "Camera", placeholder: "Tất cả camera" }, { label: "Loại ghi hình", placeholder: "Tất cả" }].map(f => (
           <div key={f.label} className="mb-2">
@@ -121,7 +122,7 @@ function RightFilterPanel() {
       </div>
 
       {/* Storage */}
-      <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-3 mb-3">
+      <div className="app-surface p-3 mb-3">
         <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Dung lượng lưu trữ</div>
         <div className="relative flex justify-center mb-1">
           <ResponsiveContainer width="100%" height={120}>
@@ -144,7 +145,7 @@ function RightFilterPanel() {
       </div>
 
       {/* NVR device */}
-      <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-3">
+      <div className="app-surface p-3">
         <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Thiết bị lưu trữ</div>
         <div className="flex items-center gap-2 mb-2">
           <div className="w-8 h-6 bg-gray-800 rounded flex items-center justify-center flex-shrink-0">
@@ -214,7 +215,7 @@ function TimelineBar() {
 function VideoPlayer({ cam }: { cam: typeof REC_CAMERAS[number] }) {
   const [playing, setPlaying] = useState(false);
   return (
-    <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm mb-4 overflow-hidden">
+    <div className="app-surface mb-4 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-900/15">
         <div className="flex items-center gap-2">
@@ -225,8 +226,8 @@ function VideoPlayer({ cam }: { cam: typeof REC_CAMERAS[number] }) {
         </div>
         <div className="flex items-center gap-2">
           <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-2.5 py-1 text-[12px] text-gray-600 hover:bg-gray-50"><ImageIcon size={12} /> Chụp ảnh</button>
-          <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center hover:bg-gray-50"><LayoutGrid size={13} className="text-gray-500" /></button>
-          <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center hover:bg-gray-50"><Maximize2 size={13} className="text-gray-500" /></button>
+          <button className="app-icon-btn"><LayoutGrid size={13} className="text-gray-500" /></button>
+          <button className="app-icon-btn"><Maximize2 size={13} className="text-gray-500" /></button>
         </div>
       </div>
       {/* Video */}
@@ -265,10 +266,10 @@ function VideoPlayer({ cam }: { cam: typeof REC_CAMERAS[number] }) {
 function TimeTab() {
   const [selectedCam, setSelectedCam] = useState(REC_CAMERAS[0]);
   return (
-    <div className="flex gap-4 items-start">
+    <div className="flex flex-col items-start gap-4 2xl:flex-row">
       <div className="flex-1 min-w-0">
         {/* Camera strip */}
-        <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm mb-4">
+        <div className="app-surface mb-4">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-900/15">
             <div className="text-[13px] font-bold text-gray-800">Danh sách camera ({REC_CAMERAS.length})</div>
             <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] text-gray-600 hover:bg-gray-50">
@@ -305,7 +306,7 @@ function TimeTab() {
         <VideoPlayer cam={selectedCam} />
 
         {/* Recording list */}
-        <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm overflow-hidden">
+        <div className="app-surface overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-900/15">
             <div className="text-[13px] font-bold text-gray-800">Danh sách ghi hình <span className="text-gray-400 font-normal text-[12px]">Tổng 256 bản ghi</span></div>
             <div className="flex gap-2">
@@ -351,14 +352,14 @@ function TimeTab() {
                     <td className={tdCls}>{r.size}</td>
                     <td className={tdCls}>
                       {r.event !== "-"
-                        ? <span className="text-[11px] text-orange-600 flex items-center gap-1"><span className="text-orange-400">⚠</span>{r.event}</span>
+                        ? <span className="text-[11px] text-orange-600 flex items-center gap-1"><TriangleAlert size={12} className="text-orange-400" />{r.event}</span>
                         : <span className="text-gray-400">-</span>}
                     </td>
                     <td className={tdCls}>
                       <div className="flex items-center gap-1">
-                        <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center text-gray-400 hover:text-blue-500 hover:border-blue-300 transition-colors"><Play size={12} /></button>
-                        <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors"><Download size={12} /></button>
-                        <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors"><MoreHorizontal size={12} /></button>
+                        <button className="app-icon-btn"><Play size={12} /></button>
+                        <button className="app-icon-btn"><Download size={12} /></button>
+                        <button className="app-icon-btn"><MoreHorizontal size={12} /></button>
                       </div>
                     </td>
                   </tr>
@@ -382,7 +383,7 @@ function EventTab() {
   return (
     <div>
       {/* Filter bar */}
-      <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-4 mb-4">
+      <div className="app-surface p-4 mb-4">
         <div className="flex items-center gap-2 flex-wrap">
           {[
             { label: "Loại sự kiện", val: "Tất cả loại sự kiện" },
@@ -403,7 +404,7 @@ function EventTab() {
               <input type="text" defaultValue="28/04/2026  00:00" className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] outline-none w-36" />
               <span className="text-gray-400 text-[11px]">→</span>
               <input type="text" defaultValue="29/04/2026  23:59" className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] outline-none w-36" />
-              <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center hover:bg-gray-50"><CalendarDays size={13} className="text-gray-400" /></button>
+              <button className="app-icon-btn"><CalendarDays size={13} className="text-gray-400" /></button>
             </div>
           </div>
           <div className="flex items-end gap-2 ml-auto">
@@ -418,7 +419,7 @@ function EventTab() {
       </div>
 
       {/* Events table */}
-      <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm overflow-hidden">
+      <div className="app-surface overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-900/15">
@@ -444,7 +445,7 @@ function EventTab() {
                   </td>
                   <td className={tdCls}>
                     <span className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">{eventIcon(e.type)}</span>
+                      <span className="app-icon-badge rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">{eventIcon(e.type)}</span>
                       <span className="text-[12px] text-gray-700">{e.type}</span>
                     </span>
                   </td>
@@ -459,9 +460,9 @@ function EventTab() {
                   </td>
                   <td className={tdCls}>
                     <div className="flex items-center gap-1">
-                      <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center text-gray-400 hover:text-blue-500 hover:border-blue-300 transition-colors"><Eye size={12} /></button>
-                      <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors"><Download size={12} /></button>
-                      <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors"><ExternalLink size={12} /></button>
+                      <button className="app-icon-btn"><Eye size={12} /></button>
+                      <button className="app-icon-btn"><Download size={12} /></button>
+                      <button className="app-icon-btn"><ExternalLink size={12} /></button>
                     </div>
                   </td>
                 </tr>
@@ -483,7 +484,7 @@ function DownloadTab() {
   const [subTab, setSubTab] = useState<DownloadSubTab>("list");
   return (
     <div>
-      <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm overflow-hidden">
+      <div className="app-surface overflow-hidden">
         {/* Sub-tabs + actions */}
         <div className="flex items-center justify-between px-4 border-b border-gray-900/15">
           <div className="flex">
@@ -543,11 +544,11 @@ function DownloadTab() {
                   <td className={tdCls}>
                     <div className="flex items-center gap-1">
                       {d.pct === 100
-                        ? <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center text-gray-400 hover:text-blue-500 hover:border-blue-300 transition-colors"><Play size={12} /></button>
-                        : <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors"><Pause size={12} /></button>
+                        ? <button className="app-icon-btn"><Play size={12} /></button>
+                        : <button className="app-icon-btn"><Pause size={12} /></button>
                       }
-                      <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors"><Folder size={12} /></button>
-                      <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors"><Trash2 size={12} /></button>
+                      <button className="app-icon-btn"><Folder size={12} /></button>
+                      <button className="app-icon-btn app-icon-btn-danger"><Trash2 size={12} /></button>
                     </div>
                   </td>
                 </tr>
@@ -574,16 +575,9 @@ export default function HistoryPage() {
   ];
 
   return (
-    <div className="p-4">
+    <div className="app-page">
       <div className="mb-4">
-        <div className="flex">
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`px-4 py-3 text-[11px] font-semibold uppercase tracking-wide border-b-2 transition-colors ${tab === t.id ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <PageTabs tabs={TABS} activeTab={tab} onChange={setTab} ariaLabel="Chế độ xem lịch sử" />
       </div>
 
       {tab === "time"     && <TimeTab />}

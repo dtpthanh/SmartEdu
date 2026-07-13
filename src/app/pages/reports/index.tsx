@@ -249,9 +249,9 @@ export default function ReportsPage() {
   ];
 
   return (
-    <div className="p-4">
+    <div className="app-page">
       {/* Filter bar */}
-      <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm px-4 py-3 mb-4 flex items-center gap-2 flex-wrap">
+      <div className="app-toolbar mb-4 flex flex-wrap items-center gap-2 px-4 py-3">
         {[
           { label: "Khoảng thời gian", val: "15 ngày qua (29/04 - 13/05/2026)" },
           { label: "Tòa nhà / Khu vực", val: "Tất cả tòa nhà" },
@@ -276,7 +276,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-5 gap-3 mb-4">
+      <div className="app-grid-stats mb-4">
         {stats.map(s => (
           <div key={s.label} className="rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm" style={{ backgroundColor: COLORS[s.iconBg] ?? "#4285F4" }}>
             <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
@@ -294,11 +294,11 @@ export default function ReportsPage() {
       </div>
 
       {/* Main content + right panel */}
-      <div className="flex gap-4 items-start">
+      <div className="flex flex-col items-start gap-4 2xl:flex-row">
         {/* Left */}
         <div className="flex-1 min-w-0 space-y-4">
           {/* Activity chart */}
-          <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-4">
+          <div className="app-surface p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="text-[13px] font-bold text-gray-800">Tổng quan hoạt động theo thời gian</div>
               <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-2.5 py-1 text-[11px] text-gray-600 hover:bg-gray-50">
@@ -314,7 +314,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Recent reports table */}
-          <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm overflow-hidden">
+          <div className="app-surface overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-900/15">
               <div className="text-[13px] font-bold text-gray-800">Báo cáo gần đây</div>
               <button className="text-[11px] text-blue-500 hover:underline">Xem tất cả</button>
@@ -336,7 +336,7 @@ export default function ReportsPage() {
                   <tr key={i} className="hover:bg-gray-50 transition-colors">
                     <td className={tdCls}>
                       <div className="flex items-center gap-2.5">
-                        <div className={`w-7 h-7 rounded-lg ${r.iconBg} ${r.iconColor} flex items-center justify-center flex-shrink-0`}>{r.icon}</div>
+                        <div className={`app-icon-badge ${r.iconBg} ${r.iconColor} flex-shrink-0`}>{r.icon}</div>
                         <span className="font-medium text-gray-800 text-[12px]">{r.name}</span>
                       </div>
                     </td>
@@ -347,11 +347,11 @@ export default function ReportsPage() {
                     <td className={tdCls}><StatusBadge s={r.status} /></td>
                     <td className={tdCls}>
                       <div className="flex items-center gap-1">
-                        <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center text-gray-400 hover:text-blue-500 hover:border-blue-300 transition-colors">
+                        <button className="app-icon-btn">
                           {r.status === "lịch" ? <Calendar size={12} /> : <Download size={12} />}
                         </button>
-                        <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors"><Eye size={12} /></button>
-                        <button className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors"><MoreHorizontal size={12} /></button>
+                        <button className="app-icon-btn"><Eye size={12} /></button>
+                        <button className="app-icon-btn"><MoreHorizontal size={12} /></button>
                       </div>
                     </td>
                   </tr>
@@ -363,9 +363,9 @@ export default function ReportsPage() {
         </div>
 
         {/* Right panel */}
-        <div className="w-[300px] flex-shrink-0 space-y-4">
+        <div className="w-full flex-shrink-0 space-y-4 2xl:w-[300px]">
           {/* Donut */}
-          <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-4">
+          <div className="app-surface p-4">
             <div className="text-[13px] font-bold text-gray-800 mb-3">Phân bổ báo cáo theo loại</div>
             <ReportDonut />
             <button className="mt-3 w-full flex items-center justify-center gap-1.5 border border-gray-200 rounded-lg py-1.5 text-[12px] text-blue-600 hover:bg-blue-50 transition-colors">
@@ -374,7 +374,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Top rooms */}
-          <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-4">
+          <div className="app-surface p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="text-[13px] font-bold text-gray-800">Top phòng học theo mức độ hoạt động</div>
               <button className="text-[11px] text-blue-500 hover:underline flex-shrink-0 ml-1">Xem tất cả</button>
@@ -384,7 +384,7 @@ export default function ReportsPage() {
 
           {/* Metrics 2-col */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-3">
+            <div className="app-surface p-3">
               <div className="flex items-center gap-1 mb-1">
                 <div className="text-[11px] text-gray-500">Hiệu suất giảng dạy</div>
                 <Info size={10} className="text-gray-400" />
@@ -396,7 +396,7 @@ export default function ReportsPage() {
               <div className="text-[10px] text-gray-400 mb-1.5">Trung bình 15 ngày qua</div>
               <div className="w-full h-1.5 bg-gray-100 rounded-full"><div className="h-full bg-green-500 rounded-full" style={{ width: "87%" }} /></div>
             </div>
-            <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-3">
+            <div className="app-surface p-3">
               <div className="flex items-center justify-between mb-1">
                 <div className="text-[11px] text-gray-500">Mức độ tập trung trung bình</div>
                 <button className="text-[10px] text-blue-500 hover:underline flex-shrink-0">Xem chi tiết</button>
@@ -411,7 +411,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Alerts this week */}
-          <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-4">
+          <div className="app-surface p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="text-[13px] font-bold text-gray-800">Cảnh báo theo tuần</div>
               <button className="text-[11px] text-blue-500 hover:underline">Xem tất cả</button>
@@ -440,7 +440,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Storage */}
-          <div className="bg-white rounded-xl border border-gray-900/15 shadow-sm p-4">
+          <div className="app-surface p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="text-[13px] font-bold text-gray-800">Dung lượng lưu trữ sử dụng</div>
               <button className="text-[11px] text-blue-500 hover:underline">Xem chi tiết</button>
