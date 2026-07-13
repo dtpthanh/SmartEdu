@@ -1,644 +1,695 @@
-﻿import { useState } from "react";
+﻿import { useMemo, useState } from "react";
 import {
-  ChevronDown, ChevronLeft, ChevronRight, X, Play,
-  Eye, MoreHorizontal, Download, Search, SlidersHorizontal,
-  Volume2, MessageCircle, Smartphone, DoorOpen, UserX,
-  Megaphone, Thermometer, Camera, Monitor, Shield,
-  AlertOctagon, HandMetal, Focus, Check, Clock,
-  BookOpen, CalendarDays, School, FileDown,
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
+  Filter,
+  MapPin,
+  School2,
+  Search,
+  SlidersHorizontal,
+  FileClock,
 } from "lucide-react";
-import { EVENTS_LIST, HISTORY_LIST, CHART_DATA, EVENT_DETAIL } from "../../data/events";
+import { PageTabs } from "../../components/PageTabs";
+import { StatCard } from "../../components/StatCard";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 
-type MainView  = "list" | "history";
-type PanelTab  = "info" | "media" | "log";
+type TabType = "schedule" | "events" | "history";
+type ScheduleStatus = "Đang học" | "Sắp diễn ra" | "Đã xong";
+type EventLevel = "Cao" | "Trung bình" | "Thấp";
+type EventStatus = "Chưa tiếp nhận" | "Chờ xử lý";
+type HistoryStatus = "Chờ xử lý" | "Hoàn tất";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function levelBadge(l: string) {
-  if (l === "Cao")        return <span className="text-[11px] px-2 py-0.5 rounded bg-red-100 text-red-600 font-medium">Cao</span>;
-  if (l === "Trung bình") return <span className="text-[11px] px-2 py-0.5 rounded bg-yellow-100 text-yellow-700 font-medium">Trung bình</span>;
-  return                         <span className="text-[11px] px-2 py-0.5 rounded bg-blue-100 text-blue-600 font-medium">Thấp</span>;
+type ScheduleItem = {
+  day: string;
+  time: string;
+  room: string;
+  subject: string;
+  teacher: string;
+  note: string;
+  status: ScheduleStatus;
+};
+
+type EventItem = {
+  id: number;
+  time: string;
+  room: string;
+  title: string;
+  level: EventLevel;
+  source: string;
+  summary: string;
+  status: EventStatus;
+};
+
+type HistoryItem = {
+  time: string;
+  actor: string;
+  action: string;
+  room: string;
+  result: HistoryStatus;
+  note: string;
+};
+
+const TAB_OPTIONS: { id: TabType; label: string }[] = [
+  { id: "schedule", label: "Thời khóa biểu" },
+  { id: "events", label: "Danh sách sự kiện" },
+  { id: "history", label: "Lịch sử xử lý" },
+];
+
+const WEEK_DAYS = [
+  { key: "mon", label: "Thứ 2", offset: 0 },
+  { key: "tue", label: "Thứ 3", offset: 1 },
+  { key: "wed", label: "Thứ 4", offset: 2 },
+  { key: "thu", label: "Thứ 5", offset: 3 },
+  { key: "fri", label: "Thứ 6", offset: 4 },
+  { key: "sat", label: "Thứ 7", offset: 5 },
+  { key: "sun", label: "Chủ nhật", offset: 6 },
+];
+
+const DEFAULT_WEEK = "2026-W29";
+const TIME_SLOTS = ["07:00 - 07:45", "08:00 - 08:45", "09:00 - 09:45", "10:00 - 10:45", "13:30 - 14:15", "14:30 - 15:15"];
+
+const SCHEDULE: Array<ScheduleItem & { dayKey: string }> = [
+  { dayKey: "mon", day: "Thứ 2", time: "07:00 - 07:45", room: "A101 - 10A1", subject: "Toán", teacher: "Cô Linh", note: "Khởi động tuần mới", status: "Đang học" },
+  { dayKey: "mon", day: "Thứ 2", time: "08:00 - 08:45", room: "A101 - 10A1", subject: "Ngữ văn", teacher: "Cô Trang", note: "Bài đọc hiểu", status: "Đang học" },
+  { dayKey: "mon", day: "Thứ 2", time: "09:00 - 09:45", room: "B102 - 11B2", subject: "Vật lý", teacher: "Thầy Quân", note: "Thí nghiệm điện học", status: "Sắp diễn ra" },
+  { dayKey: "mon", day: "Thứ 2", time: "10:00 - 10:45", room: "A101 - 10A1", subject: "Tiếng Anh", teacher: "Thầy Minh", note: "Luyện nói theo cặp", status: "Sắp diễn ra" },
+  { dayKey: "mon", day: "Thứ 2", time: "13:30 - 14:15", room: "A102 - 10A2", subject: "Sinh học", teacher: "Cô Hạnh", note: "Quan sát mẫu vật", status: "Sắp diễn ra" },
+  { dayKey: "mon", day: "Thứ 2", time: "14:30 - 15:15", room: "B101 - 11B1", subject: "GDCD", teacher: "Cô Thảo", note: "Thảo luận nhóm", status: "Sắp diễn ra" },
+  { dayKey: "tue", day: "Thứ 3", time: "07:00 - 07:45", room: "C201 - 12C1", subject: "Hóa học", teacher: "Cô Mai", note: "Ôn tập phản ứng oxi hóa", status: "Đang học" },
+  { dayKey: "tue", day: "Thứ 3", time: "08:00 - 08:45", room: "B102 - 11B2", subject: "Lịch sử", teacher: "Cô Vy", note: "Dòng thời gian sự kiện", status: "Đang học" },
+  { dayKey: "tue", day: "Thứ 3", time: "09:00 - 09:45", room: "A102 - 10A2", subject: "Tin học", teacher: "Thầy Nam", note: "Thực hành lập trình", status: "Sắp diễn ra" },
+  { dayKey: "tue", day: "Thứ 3", time: "10:00 - 10:45", room: "A103 - 10A3", subject: "Địa lý", teacher: "Cô Phương", note: "Đọc bản đồ", status: "Sắp diễn ra" },
+  { dayKey: "tue", day: "Thứ 3", time: "13:30 - 14:15", room: "C202 - 12C2", subject: "Vật lý", teacher: "Thầy Quân", note: "Bài tập vận dụng", status: "Sắp diễn ra" },
+  { dayKey: "tue", day: "Thứ 3", time: "14:30 - 15:15", room: "A101 - 10A1", subject: "Thể dục", teacher: "Thầy Khoa", note: "Rèn luyện đội hình", status: "Sắp diễn ra" },
+  { dayKey: "wed", day: "Thứ 4", time: "07:00 - 07:45", room: "B101 - 11B1", subject: "Toán", teacher: "Cô Linh", note: "Hàm số bậc hai", status: "Đang học" },
+  { dayKey: "wed", day: "Thứ 4", time: "08:00 - 08:45", room: "C201 - 12C1", subject: "Ngữ văn", teacher: "Cô Trang", note: "Phân tích tác phẩm", status: "Đang học" },
+  { dayKey: "wed", day: "Thứ 4", time: "09:00 - 09:45", room: "A102 - 10A2", subject: "Tiếng Anh", teacher: "Thầy Minh", note: "Luyện nghe", status: "Sắp diễn ra" },
+  { dayKey: "wed", day: "Thứ 4", time: "10:00 - 10:45", room: "B101 - 11B1", subject: "Sinh học", teacher: "Cô Hạnh", note: "Bài về hệ hô hấp", status: "Đã xong" },
+  { dayKey: "wed", day: "Thứ 4", time: "13:30 - 14:15", room: "A101 - 10A1", subject: "GDCD", teacher: "Cô Thảo", note: "Thảo luận nhóm", status: "Sắp diễn ra" },
+  { dayKey: "wed", day: "Thứ 4", time: "14:30 - 15:15", room: "C202 - 12C2", subject: "Tin học", teacher: "Thầy Nam", note: "Hoàn thiện bài thực hành", status: "Sắp diễn ra" },
+  { dayKey: "thu", day: "Thứ 5", time: "07:00 - 07:45", room: "A103 - 10A3", subject: "Hóa học", teacher: "Cô Mai", note: "Thí nghiệm an toàn", status: "Đang học" },
+  { dayKey: "thu", day: "Thứ 5", time: "08:00 - 08:45", room: "C202 - 12C2", subject: "Tiếng Anh", teacher: "Thầy Minh", note: "Luyện nghe", status: "Đang học" },
+  { dayKey: "thu", day: "Thứ 5", time: "09:00 - 09:45", room: "B101 - 11B1", subject: "Toán", teacher: "Cô Linh", note: "Luyện đề nhanh", status: "Sắp diễn ra" },
+  { dayKey: "thu", day: "Thứ 5", time: "10:00 - 10:45", room: "A101 - 10A1", subject: "Địa lý", teacher: "Cô Phương", note: "Địa hình Việt Nam", status: "Sắp diễn ra" },
+  { dayKey: "thu", day: "Thứ 5", time: "13:30 - 14:15", room: "C201 - 12C1", subject: "Sinh học", teacher: "Cô Hạnh", note: "Ôn tập chương", status: "Sắp diễn ra" },
+  { dayKey: "thu", day: "Thứ 5", time: "14:30 - 15:15", room: "B102 - 11B2", subject: "Lịch sử", teacher: "Cô Vy", note: "Kết nối chủ đề", status: "Sắp diễn ra" },
+  { dayKey: "fri", day: "Thứ 6", time: "07:00 - 07:45", room: "A103 - 10A3", subject: "Địa lý", teacher: "Cô Phương", note: "Bản đồ châu Á", status: "Đã xong" },
+  { dayKey: "fri", day: "Thứ 6", time: "08:00 - 08:45", room: "A101 - 10A1", subject: "Vật lý", teacher: "Thầy Quân", note: "Kiểm tra 15 phút", status: "Đang học" },
+  { dayKey: "fri", day: "Thứ 6", time: "09:00 - 09:45", room: "C201 - 12C1", subject: "Thể dục", teacher: "Thầy Khoa", note: "Kiểm tra thể lực", status: "Sắp diễn ra" },
+  { dayKey: "fri", day: "Thứ 6", time: "10:00 - 10:45", room: "B102 - 11B2", subject: "Ngữ văn", teacher: "Cô Trang", note: "Viết đoạn văn", status: "Sắp diễn ra" },
+  { dayKey: "fri", day: "Thứ 6", time: "13:30 - 14:15", room: "A102 - 10A2", subject: "Tin học", teacher: "Thầy Nam", note: "Bài tập thuật toán", status: "Sắp diễn ra" },
+  { dayKey: "fri", day: "Thứ 6", time: "14:30 - 15:15", room: "C202 - 12C2", subject: "GDCD", teacher: "Cô Thảo", note: "Tổng kết tuần", status: "Sắp diễn ra" },
+  { dayKey: "sat", day: "Thứ 7", time: "07:00 - 07:45", room: "B101 - 11B1", subject: "Toán", teacher: "Cô Linh", note: "Phụ đạo theo nhóm", status: "Sắp diễn ra" },
+  { dayKey: "sat", day: "Thứ 7", time: "08:00 - 08:45", room: "A101 - 10A1", subject: "Chuyên đề", teacher: "Bộ môn", note: "Hoạt động liên môn", status: "Sắp diễn ra" },
+  { dayKey: "sat", day: "Thứ 7", time: "09:00 - 09:45", room: "A103 - 10A3", subject: "Tiếng Anh", teacher: "Thầy Minh", note: "Câu lạc bộ giao tiếp", status: "Sắp diễn ra" },
+  { dayKey: "sat", day: "Thứ 7", time: "10:00 - 10:45", room: "C201 - 12C1", subject: "Hóa học", teacher: "Cô Mai", note: "Thực hành phòng lab", status: "Sắp diễn ra" },
+  { dayKey: "sat", day: "Thứ 7", time: "13:30 - 14:15", room: "Thư viện", subject: "Tự học", teacher: "Giám thị", note: "Ôn tập có hướng dẫn", status: "Sắp diễn ra" },
+  { dayKey: "sat", day: "Thứ 7", time: "14:30 - 15:15", room: "Sân trường", subject: "Sinh hoạt", teacher: "GVCN", note: "Sinh hoạt cuối tuần", status: "Sắp diễn ra" },
+  { dayKey: "sun", day: "Chủ nhật", time: "07:00 - 07:45", room: "Thư viện", subject: "Tự học", teacher: "Giám thị", note: "Ôn bài đầu tuần", status: "Sắp diễn ra" },
+  { dayKey: "sun", day: "Chủ nhật", time: "08:00 - 08:45", room: "A101 - 10A1", subject: "Chuyên đề Toán", teacher: "Cô Linh", note: "Bồi dưỡng học sinh", status: "Sắp diễn ra" },
+  { dayKey: "sun", day: "Chủ nhật", time: "09:00 - 09:45", room: "A102 - 10A2", subject: "Chuyên đề Anh", teacher: "Thầy Minh", note: "Luyện kỹ năng nghe nói", status: "Sắp diễn ra" },
+  { dayKey: "sun", day: "Chủ nhật", time: "10:00 - 10:45", room: "Phòng lab", subject: "Khoa học", teacher: "Cô Mai", note: "Thực hành nhóm", status: "Sắp diễn ra" },
+  { dayKey: "sun", day: "Chủ nhật", time: "13:30 - 14:15", room: "Sân trường", subject: "CLB Thể thao", teacher: "Thầy Khoa", note: "Sinh hoạt câu lạc bộ", status: "Sắp diễn ra" },
+  { dayKey: "sun", day: "Chủ nhật", time: "14:30 - 15:15", room: "Hội trường", subject: "Kỹ năng sống", teacher: "GVCN", note: "Chuẩn bị tuần mới", status: "Sắp diễn ra" },
+];
+
+const EVENTS: EventItem[] = [
+  { id: 1, time: "09:35", room: "A101 - 10A1", title: "Độ ồn vượt ngưỡng", level: "Cao", source: "AI Analytics", summary: "Mức ồn đo được 78 dB, vượt ngưỡng cho phép trong giờ học.", status: "Chưa tiếp nhận" },
+  { id: 2, time: "09:28", room: "A102 - 10A2", title: "Nói chuyện riêng", level: "Trung bình", source: "AI Analytics", summary: "Hệ thống phát hiện nhiều cụm hội thoại trong lớp học.", status: "Chưa tiếp nhận" },
+  { id: 3, time: "09:20", room: "B101 - 11B1", title: "Học sinh rời chỗ", level: "Trung bình", source: "AI Analytics", summary: "Có 3 học sinh di chuyển khỏi vị trí ngồi.", status: "Chờ xử lý" },
+  { id: 4, time: "09:15", room: "C201 - 12C1", title: "Giơ tay phát biểu", level: "Thấp", source: "AI Analytics", summary: "Phát hiện hành vi tương tác tích cực trong lớp.", status: "Chờ xử lý" },
+  { id: 5, time: "09:05", room: "B102 - 11B2", title: "Nhiệt độ tăng cao", level: "Cao", source: "NVR-01", summary: "Nhiệt độ phòng đạt 31.2°C, cần kiểm tra điều hòa.", status: "Chưa tiếp nhận" },
+  { id: 6, time: "08:50", room: "Thư viện", title: "Xâm nhập khu vực", level: "Cao", source: "Camera 07", summary: "Phát hiện người lạ đi vào khu vực hạn chế.", status: "Chờ xử lý" },
+];
+
+const HISTORY: HistoryItem[] = [
+  { time: "09:37:45", actor: "admin", action: "Xác nhận và đóng sự kiện", room: "A101 - 10A1", result: "Hoàn tất", note: "Đã nhắc nhở giáo viên và ghi nhận vào báo cáo buổi sáng." },
+  { time: "09:36:20", actor: "giovienA", action: "Tiếp nhận cảnh báo", room: "A102 - 10A2", result: "Chờ xử lý", note: "Đã kiểm tra lớp, yêu cầu học sinh ổn định trật tự." },
+  { time: "09:35:50", actor: "AI Analytics", action: "Tự động gán mức độ", room: "A101 - 10A1", result: "Hoàn tất", note: "Mức cảnh báo được gán là cao dựa trên ngưỡng ồn." },
+  { time: "09:22:11", actor: "Quản trị viên", action: "Chuyển xử lý cho giáo viên", room: "B101 - 11B1", result: "Chờ xử lý", note: "Đã chuyển thông báo tới giáo viên chủ nhiệm." },
+  { time: "09:05:30", actor: "Hệ thống", action: "Ghi nhận nhật ký thiết bị", room: "B102 - 11B2", result: "Hoàn tất", note: "Đã lưu trạng thái nhiệt độ và kiểm tra cảm biến." },
+];
+
+function levelBadge(level: EventLevel) {
+  const cls =
+    level === "Cao"
+      ? "bg-red-100 text-red-700"
+      : level === "Trung bình"
+        ? "bg-amber-100 text-amber-700"
+        : "bg-blue-100 text-blue-700";
+
+  return <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${cls}`}>{level}</span>;
 }
-function statusBadge(s: string) {
-  if (s === "daxuly")   return <span className="text-[11px] px-2 py-0.5 rounded-full bg-green-100 text-green-600 font-medium">Đã xử lý</span>;
-  if (s === "choduyet") return <span className="text-[11px] px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-600 font-medium">Chờ duyệt</span>;
-  return                       <span className="text-[11px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 font-medium">Chưa xử lý</span>;
-}
-function eventIcon(type: string) {
-  const cls = "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0";
-  if (type.includes("ồn"))         return <div className={`${cls} bg-orange-100`}><Volume2 size={14} className="text-orange-500" /></div>;
-  if (type.includes("chuyện"))     return <div className={`${cls} bg-blue-100`}><MessageCircle size={14} className="text-blue-500" /></div>;
-  if (type.includes("điện thoại")) return <div className={`${cls} bg-yellow-100`}><Smartphone size={14} className="text-yellow-500" /></div>;
-  if (type.includes("rời"))        return <div className={`${cls} bg-yellow-100`}><UserX size={14} className="text-yellow-500" /></div>;
-  if (type.includes("tay"))        return <div className={`${cls} bg-green-100`}><HandMetal size={14} className="text-green-500" /></div>;
-  if (type.includes("tập trung"))  return <div className={`${cls} bg-orange-100`}><Focus size={14} className="text-orange-500" /></div>;
-  if (type.includes("nhiệt"))      return <div className={`${cls} bg-red-100`}><Thermometer size={14} className="text-red-500" /></div>;
-  if (type.includes("khuất"))      return <div className={`${cls} bg-gray-100`}><Camera size={14} className="text-gray-500" /></div>;
-  if (type.includes("chiếu"))      return <div className={`${cls} bg-gray-100`}><Monitor size={14} className="text-gray-500" /></div>;
-  if (type.includes("Xâm"))        return <div className={`${cls} bg-red-100`}><Shield size={14} className="text-red-500" /></div>;
-  if (type.includes("cấm"))        return <div className={`${cls} bg-orange-100`}><AlertOctagon size={14} className="text-orange-500" /></div>;
-  return                                   <div className={`${cls} bg-gray-100`}><Megaphone size={14} className="text-gray-500" /></div>;
+
+function historyBadge(result: HistoryStatus) {
+  const cls =
+    result === "Hoàn tất"
+      ? "bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-200"
+      : "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-200";
+
+  return <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${cls}`}>{result}</span>;
 }
 
-const thCls = "px-3 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap bg-gray-50";
-const tdCls = "px-3 py-3 text-[12px] text-gray-700 align-middle";
-
-// ── Pagination ────────────────────────────────────────────────────────────────
-function Pager({ total, unit, last }: { total: number; unit: string; last: number }) {
-  const [page, setPage] = useState(1);
+function PageHeader({ tab, setTab }: { tab: TabType; setTab: (tab: TabType) => void }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-gray-900/15 text-[12px] text-gray-500">
-      <span>Hiển thị 1 - 10 trong tổng số {total} {unit}</span>
-      <div className="flex items-center gap-1">
-        <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
-          className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center hover:bg-gray-50 disabled:opacity-40">
-          <ChevronLeft size={13} />
-        </button>
-        {[1,2,3,4,5].map(p => (
-          <button key={p} onClick={() => setPage(p)}
-            className={`w-7 h-7 rounded border text-[12px] font-medium ${page === p ? "bg-blue-600 text-white border-blue-600" : "border-gray-200 hover:bg-gray-50"}`}>
-            {p}
-          </button>
-        ))}
-        <span className="px-1">...</span>
-        <button onClick={() => setPage(last)}
-          className={`w-7 h-7 rounded border text-[12px] font-medium ${page === last ? "bg-blue-600 text-white border-blue-600" : "border-gray-200 hover:bg-gray-50"}`}>
-          {last}
-        </button>
-        <button onClick={() => setPage(p => Math.min(last, p + 1))}
-          className="w-7 h-7 border border-gray-200 rounded flex items-center justify-center hover:bg-gray-50">
-          <ChevronRight size={13} />
-        </button>
-        <div className="flex items-center gap-1 ml-2 border border-gray-200 rounded px-2 py-1">
-          <span>10 / trang</span><ChevronDown size={11} className="text-gray-400" />
-        </div>
-      </div>
+    <div className="mb-4">
+      <PageTabs tabs={TAB_OPTIONS} activeTab={tab} onChange={setTab} ariaLabel="Chế độ xem sự kiện" />
     </div>
   );
 }
 
-// ── Action buttons ────────────────────────────────────────────────────────────
-function ActionBtns() {
+function getWeekStart(weekValue: string) {
+  const [yearText, weekText] = weekValue.split("-W");
+  const year = Number(yearText);
+  const week = Number(weekText);
+
+  if (!year || !week) {
+    return getWeekStart(DEFAULT_WEEK);
+  }
+
+  const jan4 = new Date(year, 0, 4);
+  const jan4Day = jan4.getDay() || 7;
+  const monday = new Date(year, 0, 4 - jan4Day + 1);
+  monday.setDate(monday.getDate() + (week - 1) * 7);
+  return monday;
+}
+
+function formatWeekDate(weekValue: string, dayOffset: number) {
+  const date = getWeekStart(weekValue);
+  date.setDate(date.getDate() + dayOffset);
+  return new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
+}
+
+function SummaryRow({
+  tab,
+  setTab,
+  eventCount,
+  handledCount,
+  pendingCount,
+}: {
+  tab: TabType;
+  setTab: (tab: TabType) => void;
+  eventCount: number;
+  handledCount: number;
+  pendingCount: number;
+}) {
+
   return (
-    <div className="flex items-center gap-1">
-      <button className="app-icon-btn"><Eye size={12} /></button>
-      <button className="app-icon-btn"><MoreHorizontal size={12} /></button>
+    <div className="app-grid-stats mb-4">
+      <StatCard onClick={() => setTab("events")} active={tab === "events"} icon={<AlertTriangle size={18} />} count={eventCount} label="Sự kiện" sub="Đang theo dõi" iconBg="bg-blue-50" iconColor="text-orange-500" />
+      <StatCard onClick={() => setTab("history")} active={tab === "history"} icon={<CheckCircle2 size={18} />} count={handledCount} label="Đã giải quyết" sub="Hoàn tất" iconBg="bg-green-50" iconColor="text-green-500" />
+      <StatCard onClick={() => setTab("history")} active={tab === "history"} icon={<FileClock size={18} />} count={pendingCount} label="Chờ xử lý" sub="Cần theo dõi" iconBg="bg-orange-50" iconColor="text-yellow-500" />
     </div>
   );
 }
 
-// ── Chart (pure CSS — avoids recharts duplicate-key bug with stackId) ─────────
-function EventChart() {
-  const maxTotal = Math.max(...CHART_DATA.map(d => d.cao + d.tb + d.thap));
+function ScheduleTab() {
+  const [selectedWeek, setSelectedWeek] = useState(DEFAULT_WEEK);
+  const weekDays = useMemo(
+    () => WEEK_DAYS.map(day => ({ ...day, fullDate: formatWeekDate(selectedWeek, day.offset) })),
+    [selectedWeek],
+  );
+
   return (
-    <div className="app-surface p-4 mb-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-[13px] font-bold text-gray-800">Sự kiện theo thời gian</div>
-        <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-gray-600 hover:bg-gray-50">
-          Theo giờ <ChevronDown size={11} className="text-gray-400" />
-        </button>
-      </div>
-      {/* Y-axis labels + bars */}
-      <div className="flex gap-3">
-        {/* Y labels */}
-        <div className="flex flex-col justify-between text-[9px] text-gray-400 text-right pb-5" style={{ height: 180 }}>
-          {[60, 40, 20, 0].map(v => <span key={v}>{v}</span>)}
+    <div>
+      <div className="app-toolbar overflow-hidden">
+        <div className="flex flex-col gap-3 border-b border-slate-200/70 px-4 py-4 dark:border-slate-700/70 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <div className="text-[15px] font-semibold text-slate-900 dark:text-slate-50">Thời khóa biểu lớp học</div>
+            <div className="text-[13px] text-slate-500 dark:text-slate-400">Chọn tuần để xem nhanh lịch học tương ứng</div>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-[13px] font-medium text-slate-500 dark:text-slate-400" htmlFor="schedule-week">
+              Tuần
+            </label>
+            <input
+              id="schedule-week"
+              type="week"
+              value={selectedWeek}
+              onChange={event => setSelectedWeek(event.target.value || DEFAULT_WEEK)}
+              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-[12px] text-slate-700 outline-none transition-colors focus:border-blue-300 dark:border-slate-700 dark:bg-slate-950/10 dark:text-slate-200"
+            />
+          </div>
         </div>
-        {/* Chart area */}
-        <div className="flex-1">
-          <div className="flex items-end gap-1" style={{ height: 160 }}>
-            {CHART_DATA.map(d => {
-              const total = d.cao + d.tb + d.thap;
-              const h = (total / maxTotal) * 160;
-              return (
-                <div key={d.hour} className="flex-1 flex flex-col justify-end group relative" style={{ height: 160 }}>
-                  <div className="w-full rounded-t overflow-hidden" style={{ height: h }}>
-                    <div style={{ height: `${(d.cao / total) * 100}%`, backgroundColor: "#ef4444" }} />
-                    <div style={{ height: `${(d.tb  / total) * 100}%`, backgroundColor: "#FBBC05" }} />
-                    <div style={{ height: `${(d.thap / total) * 100}%`, backgroundColor: "#4285F4" }} />
-                  </div>
-                  {/* Tooltip */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-10 pointer-events-none">
-                    <div className="bg-gray-800 text-white text-[10px] rounded px-2 py-1 whitespace-nowrap">
-                      <div>Cao: {d.cao}</div>
-                      <div>TB: {d.tb}</div>
-                      <div>Thấp: {d.thap}</div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1080px] table-fixed border-separate border-spacing-0">
+            <colgroup>
+              <col className="w-[136px]" />
+              {weekDays.map(day => (
+                <col key={day.key} />
+              ))}
+            </colgroup>
+            <thead>
+              <tr className="bg-slate-50/90 dark:bg-slate-900/60">
+                <th className="sticky left-0 z-10 border-b border-r border-slate-200/70 bg-inherit px-3 py-3 text-center text-[12px] font-semibold text-slate-900 dark:border-slate-700/70 dark:text-slate-50">
+                  Giờ
+                </th>
+                {weekDays.map(day => (
+                  <th
+                    key={day.key}
+                    className="border-b border-slate-200/70 px-4 py-3 text-center text-[12px] font-semibold text-slate-900 dark:border-slate-700/70 dark:text-slate-50"
+                  >
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span>{day.label}</span>
+                      <span>{day.fullDate}</span>
                     </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {/* X labels */}
-          <div className="flex gap-1 mt-1">
-            {CHART_DATA.map(d => (
-              <div key={d.hour} className="flex-1 text-center text-[9px] text-gray-400">{d.hour}</div>
-            ))}
-          </div>
-        </div>
-      </div>
-      {/* Legend */}
-      <div className="flex items-center gap-4 mt-2 text-[11px] text-gray-500">
-        <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm inline-block bg-red-500" />Cao</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm inline-block bg-orange-500" />Trung bình</span>
-        <span className="flex items-center gap-1.5"><span className="w-3 h-2 rounded-sm inline-block bg-blue-500" />Thấp</span>
-      </div>
-    </div>
-  );
-}
-
-// ── Main events table ─────────────────────────────────────────────────────────
-function EventsTable({ onSelect }: { onSelect: () => void }) {
-  return (
-    <div className="app-surface overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-900/15">
-        <div className="text-[13px] font-bold text-gray-800">
-          Danh sách sự kiện <span className="text-gray-400 font-normal">(156)</span>
-        </div>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-gray-600 hover:bg-gray-50"><BookOpen size={13} /> Đánh dấu đã đọc</button>
-          <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-gray-600 hover:bg-gray-50"><FileDown size={13} /> Xuất danh sách</button>
-        </div>
-      </div>
-      <table className="w-full">
-        <thead className="border-b border-gray-900/15">
-          <tr>
-            <th className="pl-4 pr-2 py-3 bg-gray-50"><input type="checkbox" className="rounded" /></th>
-            <th className={thCls}>Thời gian</th>
-            <th className={thCls}>Phòng học</th>
-            <th className={thCls}>Loại sự kiện</th>
-            <th className={thCls}>Mức độ</th>
-            <th className={thCls}>Mô tả</th>
-            <th className={thCls}>Phát hiện bởi</th>
-            <th className={thCls}>Trạng thái</th>
-            <th className={thCls}>Thao tác</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-50">
-          {EVENTS_LIST.map((e, i) => (
-            <tr key={i} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={onSelect}>
-              <td className="pl-4 pr-2 py-3"><input type="checkbox" className="rounded" onClick={ev => ev.stopPropagation()} /></td>
-              <td className={tdCls + " font-mono text-[12px] font-semibold"}>{e.time}</td>
-              <td className={tdCls + " whitespace-nowrap"}>{e.room}</td>
-              <td className={tdCls}>
-                <div className="flex items-center gap-2">{eventIcon(e.type)}<span>{e.type}</span></div>
-              </td>
-              <td className={tdCls}>{levelBadge(e.level)}</td>
-              <td className={tdCls + " text-gray-500 max-w-[200px] truncate"}>{e.desc}</td>
-              <td className={tdCls}>{e.by}</td>
-              <td className={tdCls}>{statusBadge(e.status)}</td>
-              <td className={tdCls}><ActionBtns /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <Pager total={156} unit="sự kiện" last={16} />
-    </div>
-  );
-}
-
-// ── History table ─────────────────────────────────────────────────────────────
-function HistoryTable({ onSelect }: { onSelect: () => void }) {
-  return (
-    <div className="app-surface overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-900/15">
-        <div>
-          <div className="text-[13px] font-bold text-gray-800">Lịch sử xử lý sự kiện <span className="text-gray-400 font-normal">(72)</span></div>
-          <div className="text-[11px] text-gray-400 mt-0.5">Theo dõi toàn bộ sự kiện đã được hệ thống xử lý</div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5">
-            <Search size={12} className="text-gray-400" />
-            <input className="text-[12px] outline-none placeholder-gray-400 bg-transparent w-36" placeholder="Tìm trong lịch sử..." />
-          </div>
-          <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-gray-600 hover:bg-gray-50">Tất cả kết quả <ChevronDown size={11} className="text-gray-400" /></button>
-          <button className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-gray-600 hover:bg-gray-50">Mới nhất <ChevronDown size={11} className="text-gray-400" /></button>
-          <button className="app-icon-btn"><Download size={13} /></button>
-        </div>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="border-b border-gray-900/15">
-            <tr>
-              <th className="pl-4 pr-2 py-3 bg-gray-50"><input type="checkbox" className="rounded" /></th>
-              <th className={thCls}>Thời gian</th>
-              <th className={thCls}>Sự kiện</th>
-              <th className={thCls}>Phòng học</th>
-              <th className={thCls}>Thiết bị</th>
-              <th className={thCls}>Mức độ</th>
-              <th className={thCls}>Kết quả xử lý</th>
-              <th className={thCls}>Xử lý bởi</th>
-              <th className={thCls}>Thời gian xử lý</th>
-              <th className={thCls}>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {HISTORY_LIST.map((h, i) => (
-              <tr key={i} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={onSelect}>
-                <td className="pl-4 pr-2 py-3"><input type="checkbox" className="rounded" onClick={ev => ev.stopPropagation()} /></td>
-                <td className={tdCls}>
-                  <div className="font-mono text-[12px] font-semibold text-gray-800">{h.time}</div>
-                  <div className="text-[10px] text-gray-400">{h.date}</div>
-                </td>
-                <td className={tdCls}>
-                  <div className="flex items-center gap-2">{eventIcon(h.type)}
-                    <div>
-                      <div className="text-[12px] font-medium text-gray-800">{h.type}</div>
-                      <div className="text-[10px] text-gray-400">{h.sub}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className={tdCls + " whitespace-nowrap"}>{h.room}</td>
-                <td className={tdCls}>{h.device}</td>
-                <td className={tdCls}>{levelBadge(h.level)}</td>
-                <td className={tdCls}>{statusBadge(h.result)}</td>
-                <td className={tdCls}>{h.handler}</td>
-                <td className={tdCls + " font-mono text-[11px]"}>{h.duration}</td>
-                <td className={tdCls}><ActionBtns /></td>
+                  </th>
+                ))}
               </tr>
+            </thead>
+            <tbody>
+              {TIME_SLOTS.map(slot => (
+                <tr key={slot} className="align-top">
+                  <td className="sticky left-0 z-10 border-b border-r border-slate-200/70 bg-white px-3 py-4 text-[12px] font-semibold text-slate-900 dark:border-slate-700/70 dark:bg-slate-950/20 dark:text-slate-50">
+                    <div className="flex items-center gap-2 whitespace-nowrap">
+                      <Clock3 size={13} className="text-blue-500" />
+                      {slot}
+                    </div>
+                  </td>
+                  {weekDays.map(day => {
+                    const item = SCHEDULE.find(entry => entry.dayKey === day.key && entry.time === slot);
+
+                    return (
+                      <td key={`${day.key}-${slot}`} className="border-b border-slate-200/70 bg-white px-3 py-3 dark:border-slate-700/70 dark:bg-slate-950/20">
+                        {item ? (
+                          <div className="rounded-2xl border border-slate-200 bg-white p-3 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950/20 dark:hover:bg-slate-800/40">
+                            <div className="mb-2">
+                              <div className="text-[12px] font-semibold text-slate-900 dark:text-slate-50">{item.room}</div>
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400">{item.subject}</div>
+                            </div>
+                            <div className="space-y-1 text-[11px] text-slate-500 dark:text-slate-400">
+                              <div className="flex items-center gap-1.5">
+                                <School2 size={12} className="text-slate-400" />
+                                {item.teacher}
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <MapPin size={12} className="text-slate-400" />
+                                {item.note}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex min-h-[98px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 text-[11px] text-slate-400 dark:border-slate-700 dark:bg-slate-950/10 dark:text-slate-500">
+                            Trống
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EventsTab({
+  events,
+  setEvents,
+  setHistoryItems,
+}: {
+  events: EventItem[];
+  setEvents: (value: EventItem[] | ((current: EventItem[]) => EventItem[])) => void;
+  setHistoryItems: (value: HistoryItem[] | ((current: HistoryItem[]) => HistoryItem[])) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [levelFilter, setLevelFilter] = useState<EventLevel | "Tất cả">("Tất cả");
+  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+
+  const filteredEvents = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+
+    return events.filter(item => {
+      const matchesQuery = normalized
+        ? [item.time, item.room, item.title, item.source, item.summary].join(" ").toLowerCase().includes(normalized)
+        : true;
+      const matchesLevel = levelFilter === "Tất cả" || item.level === levelFilter;
+      return matchesQuery && matchesLevel;
+    });
+  }, [events, levelFilter, query]);
+
+  const receiveEvent = (event: EventItem) => {
+    if (event.status === "Chờ xử lý") {
+      return;
+    }
+
+    setEvents(current => current.map(item => (item.id === event.id ? { ...item, status: "Chờ xử lý" } : item)));
+    setSelectedEvent(current => (current?.id === event.id ? { ...current, status: "Chờ xử lý" } : current));
+    setHistoryItems(current => [
+      {
+        time: new Date().toLocaleTimeString("vi-VN", { hour12: false }),
+        actor: "Quản trị viên",
+        action: `Đã tiếp nhận: ${event.title}`,
+        room: event.room,
+        result: "Chờ xử lý",
+        note: event.summary,
+      },
+      ...current,
+    ]);
+  };
+
+  const resolveEvent = (event: EventItem) => {
+    const resolvedAt = new Date();
+    const time = resolvedAt.toLocaleTimeString("vi-VN", { hour12: false });
+
+    setEvents(current => current.filter(item => item.id !== event.id));
+    setSelectedEvent(null);
+    setHistoryItems(current => [
+      {
+        time,
+        actor: "Quản trị viên",
+        action: `Đã giải quyết: ${event.title}`,
+        room: event.room,
+        result: "Hoàn tất",
+        note: event.summary,
+      },
+      ...current,
+    ]);
+  };
+
+  return (
+    <div className="app-toolbar overflow-hidden">
+      <div className="flex flex-col gap-3 border-b border-slate-200/70 px-4 py-4 dark:border-slate-700/70 xl:flex-row xl:items-center xl:justify-between">
+        <div>
+          <div className="text-[16px] font-semibold text-slate-900 dark:text-slate-50">Danh sách sự kiện</div>
+          <div className="text-[13px] text-slate-500 dark:text-slate-400">{filteredEvents.length} sự kiện phù hợp với bộ lọc hiện tại</div>
+        </div>
+        <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
+          <div className="app-toolbar-control flex min-h-10 items-center gap-2 px-3">
+            <Search size={14} className="text-slate-400" />
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Tìm theo lớp, sự kiện, nguồn..."
+              className="w-64 bg-transparent text-[12px] outline-none placeholder:text-slate-400"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {["Tất cả", "Cao", "Trung bình", "Thấp"].map(level => (
+              <button
+                key={level}
+                type="button"
+                onClick={() => setLevelFilter(level as EventLevel | "Tất cả")}
+                className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors ${
+                  levelFilter === level
+                    ? "border-blue-300 bg-blue-50 text-blue-700"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950/10 dark:text-slate-300"
+                }`}
+              >
+                {level}
+              </button>
             ))}
-          </tbody>
-        </table>
-        <Pager total={72} unit="kết quả" last={8} />
-      </div>
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// RIGHT PANEL
-// ══════════════════════════════════════════════════════════════════════════════
-
-function PanelInfo() {
-  const d = EVENT_DETAIL;
-  return (
-    <div className="space-y-4">
-      {/* Video */}
-      <div className="relative rounded-lg overflow-hidden">
-        <img src={d.img} alt="event" className="w-full h-[160px] object-cover" />
-        <button className="absolute inset-0 flex items-center justify-center">
-          <div className="w-10 h-10 bg-black/50 rounded-full flex items-center justify-center hover:bg-black/70 transition-colors">
-            <Play size={18} className="text-white ml-0.5" />
-          </div>
-        </button>
-        <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1 flex items-center gap-2">
-          <span className="text-white text-[10px] font-mono">00:05</span>
-          <div className="flex-1 h-1 bg-white/30 rounded-full"><div className="h-full bg-blue-400 rounded-full w-1/4" /></div>
-          <span className="text-white text-[10px] font-mono">00:20</span>
-        </div>
-      </div>
-
-      {/* Event info */}
-      <div>
-        <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Thông tin sự kiện</div>
-        <div className="space-y-1.5 text-[11px]">
-          {[
-            ["Thời gian xảy ra",  d.timeOccur],
-            ["Thời gian phát hiện", d.timeDetect],
-            ["Phòng học",         d.room.replace("Phòng ", "")],
-            ["Thiết bị",          d.device],
-            ["Phát hiện bởi",     d.detectedBy],
-            ["Độ tin cậy",        `${d.confidence}%`],
-            ["Mức độ ồn",         `${d.noise} dB`],
-            ["Ngưỡng cảnh báo",   d.threshold],
-          ].map(([k, v]) => (
-            <div key={k} className="flex justify-between gap-2">
-              <span className="text-gray-400 flex-shrink-0">{k}</span>
-              <span className="text-gray-700 text-right">{v}</span>
-            </div>
-          ))}
-          <div className="flex justify-between gap-2">
-            <span className="text-gray-400 flex-shrink-0">Mô tả</span>
-            <span className="text-gray-700 text-right">{d.desc} <button className="text-blue-500 hover:underline">Xem thêm</button></span>
-          </div>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div>
-        <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Hành động</div>
-        <div className="grid grid-cols-2 gap-1.5">
-          <button className="py-1.5 rounded-lg bg-green-500 text-white text-[11px] font-medium hover:bg-green-600 transition-colors">Đánh dấu đã xử lý</button>
-          <button className="py-1.5 rounded-lg border border-gray-200 text-gray-600 text-[11px] font-medium hover:bg-gray-50 transition-colors">Giao cho người khác</button>
-          <button className="py-1.5 rounded-lg border border-gray-200 text-gray-600 text-[11px] font-medium hover:bg-gray-50 transition-colors">Bỏ qua</button>
-          <button className="py-1.5 rounded-lg border border-red-200 text-red-500 text-[11px] font-medium hover:bg-red-50 transition-colors">Báo cáo</button>
-        </div>
-      </div>
-
-      {/* Related */}
-      <div>
-        <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Thông tin liên quan</div>
-        <div className="space-y-1">
-          {[
-            ["Sự kiện tương tự", "3 sự kiện trong hôm nay"],
-            ["Bản ghi liên quan", "09:30 - 09:40 (10 phút)"],
-          ].map(([k, v]) => (
-            <button key={k} className="w-full flex items-center justify-between py-2 px-2.5 rounded-lg border border-gray-100 hover:bg-gray-50 text-[11px] text-left transition-colors">
-              <div><div className="text-gray-600 font-medium">{k}</div><div className="text-gray-400">{v}</div></div>
-              <ChevronRight size={13} className="text-gray-400 flex-shrink-0" />
+            <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950/10 dark:text-slate-200">
+              <SlidersHorizontal size={13} />
+              Bộ lọc
             </button>
-          ))}
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
 
-function PanelMedia() {
-  const d = EVENT_DETAIL;
-  return (
-    <div className="space-y-4">
-      {/* Clips */}
-      <div>
-        <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Video clips</div>
-        <div className="grid grid-cols-2 gap-2">
-          {d.clips.map((c, i) => (
-            <div key={i} className="rounded-lg overflow-hidden border border-gray-100">
-              <div className="relative">
-                <img src={c.img} alt={c.label} className="w-full h-[80px] object-cover" />
-                <button className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-8 h-8 bg-black/50 rounded-full flex items-center justify-center hover:bg-black/70 transition-colors">
-                    <Play size={13} className="text-white ml-0.5" />
+      <div className="divide-y divide-slate-100 dark:divide-slate-800">
+        {filteredEvents.length === 0 ? (
+          <div className="px-4 py-12 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-800">
+              <Search size={18} />
+            </div>
+            <div className="mt-3 text-sm font-semibold text-slate-800 dark:text-slate-100">Không tìm thấy sự kiện phù hợp</div>
+            <div className="mt-1 text-[12px] text-slate-500 dark:text-slate-400">Thử đổi từ khóa hoặc chọn lại mức độ cảnh báo.</div>
+          </div>
+        ) : (
+          filteredEvents.map(event => {
+            const levelClass =
+              event.level === "Cao"
+                ? "border-red-200 bg-red-50/70 dark:border-red-500/20 dark:bg-red-500/5"
+                : event.level === "Trung bình"
+                  ? "border-amber-200 bg-amber-50/70 dark:border-amber-500/20 dark:bg-amber-500/5"
+                  : "border-blue-200 bg-blue-50/70 dark:border-blue-500/20 dark:bg-blue-500/5";
+
+            return (
+              <article
+                key={event.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`Xem chi tiết sự kiện ${event.title}`}
+                onClick={() => setSelectedEvent(event)}
+                onKeyDown={keyEvent => {
+                  if (keyEvent.key === "Enter" || keyEvent.key === " ") {
+                    keyEvent.preventDefault();
+                    setSelectedEvent(event);
+                  }
+                }}
+                className={`mx-4 my-3 rounded-2xl border px-4 py-4 transition-colors hover:cursor-pointer hover:bg-white dark:hover:bg-slate-900/40 ${levelClass}`}
+              >
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="truncate text-[14px] font-semibold text-slate-900 dark:text-slate-50">{event.title}</div>
+                      {levelBadge(event.level)}
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-slate-500 dark:text-slate-400">
+                      <span className="rounded-md bg-white/80 px-2 py-1 font-mono font-semibold text-slate-700 dark:bg-slate-950/30 dark:text-slate-200">{event.time}</span>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-white/80 px-2 py-1 dark:bg-slate-950/30">
+                        <MapPin size={12} />
+                        {event.room}
+                      </span>
+                      <span className="rounded-md bg-white/80 px-2 py-1 dark:bg-slate-950/30">{event.source}</span>
+                      <span className={`rounded-md px-2 py-1 font-medium ${event.status === "Chờ xử lý" ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-200" : "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-200"}`}>
+                        Trạng thái: {event.status}
+                      </span>
+                    </div>
+                    <p className="mt-2 max-w-4xl text-[13px] leading-6 text-slate-600 dark:text-slate-300">{event.summary}</p>
                   </div>
+
+                  <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                    {event.status === "Chưa tiếp nhận" ? (
+                      <button
+                        type="button"
+                        onClick={clickEvent => {
+                          clickEvent.stopPropagation();
+                          receiveEvent(event);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[12px] font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:border-blue-400/30 dark:bg-blue-500/15 dark:text-blue-200 dark:hover:bg-blue-500/25"
+                      >
+                        <CheckCircle2 size={13} />
+                        Đã tiếp nhận
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={clickEvent => {
+                        clickEvent.stopPropagation();
+                        resolveEvent(event);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12px] font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-200 dark:hover:bg-emerald-500/25"
+                    >
+                      Đã giải quyết
+                    </button>
+                  </div>
+                </div>
+              </article>
+            );
+          })
+        )}
+      </div>
+
+      <Dialog
+        open={selectedEvent !== null}
+        onOpenChange={open => {
+          if (!open) {
+            setSelectedEvent(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[720px]">
+          {selectedEvent ? (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-left text-slate-900 dark:text-slate-50">{selectedEvent.title}</DialogTitle>
+                <DialogDescription className="text-left">
+                  Sự kiện được ghi nhận lúc {selectedEvent.time} tại {selectedEvent.room}.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="grid gap-4">
+                <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-950/30 sm:grid-cols-2">
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Mức độ</div>
+                    <div className="mt-1">{levelBadge(selectedEvent.level)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Trạng thái</div>
+                    <div className="mt-1">
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${selectedEvent.status === "Chờ xử lý" ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-200" : "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-200"}`}>
+                        {selectedEvent.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Thời gian</div>
+                    <div className="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{selectedEvent.time}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Phòng</div>
+                    <div className="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{selectedEvent.room}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Nguồn</div>
+                    <div className="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{selectedEvent.source}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Mã sự kiện</div>
+                    <div className="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">#{selectedEvent.id.toString().padStart(3, "0")}</div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-7 text-slate-600 dark:border-slate-700 dark:bg-slate-950/20 dark:text-slate-300">
+                  {selectedEvent.summary}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap justify-end gap-2">
+                {selectedEvent.status === "Chưa tiếp nhận" ? (
+                  <button
+                    type="button"
+                    onClick={() => receiveEvent(selectedEvent)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[12px] font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:border-blue-400/30 dark:bg-blue-500/15 dark:text-blue-200 dark:hover:bg-blue-500/25"
+                  >
+                    <CheckCircle2 size={13} />
+                    Đã tiếp nhận
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => resolveEvent(selectedEvent)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12px] font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-200 dark:hover:bg-emerald-500/25"
+                >
+                  Đã giải quyết
                 </button>
-                <div className="absolute bottom-1 left-1 text-white text-[9px] font-mono bg-black/50 px-1 rounded">{c.time || c.dur}</div>
-                <div className="absolute bottom-1 right-1 text-white text-[9px] font-mono bg-black/50 px-1 rounded">{c.dur}</div>
               </div>
-              <div className="px-1.5 py-1 text-[10px] text-gray-600 font-medium truncate">{c.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Screenshots */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Hình ảnh chụp</div>
-          <button className="text-[11px] text-blue-500 hover:underline">Xem tất cả</button>
-        </div>
-        <div className="grid grid-cols-3 gap-1.5">
-          {d.screenshots.map((s, i) => (
-            <div key={i} className="rounded overflow-hidden border border-gray-100">
-              <img src={s.img} alt={s.time} className="w-full h-[60px] object-cover" />
-              <div className="text-[9px] text-gray-400 text-center py-0.5 font-mono">{s.time}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* History summary */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Lịch sử xử lý (2)</div>
-          <button className="text-[11px] text-blue-500 hover:underline">Xem tất cả</button>
-        </div>
-        <div className="space-y-2">
-          {[
-            { date: "29/04/2026 09:40:15", user: "admin", status: "daxuly", note: "Đã nhắc nhở giáo viên và ổn định lớp học." },
-            { date: "29/04/2026 09:36:02", user: "admin", status: "danxuly", note: "Đã tiếp nhận sự kiện, đang kiểm tra." },
-          ].map((h, i) => (
-            <div key={i} className="flex gap-2 text-[11px]">
-              <div className={`w-4 h-4 rounded-full flex-shrink-0 mt-0.5 flex items-center justify-center ${h.status === "daxuly" ? "bg-green-500" : "bg-blue-500"}`}>
-                {h.status === "daxuly" ? <Check size={9} className="text-white" /> : <Clock size={9} className="text-white" />}
-              </div>
-              <div>
-                <div className="flex items-center gap-2"><span className="font-medium text-gray-700">{h.date}</span><span className="text-gray-400">{h.user}</span>{statusBadge(h.status === "daxuly" ? "daxuly" : "chuaxuly")}</div>
-                <div className="text-gray-500">{h.note}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Event info compact */}
-      <div>
-        <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Thông tin sự kiện</div>
-        <div className="space-y-1 text-[11px]">
-          {[["Thời gian xảy ra", EVENT_DETAIL.timeOccur], ["Thời gian phát hiện", EVENT_DETAIL.timeDetect], ["Phòng học", "A101 - Lớp 10A1"], ["Thiết bị", EVENT_DETAIL.device], ["Ngưỡng cảnh báo", EVENT_DETAIL.threshold], ["Mô tả", EVENT_DETAIL.desc]].map(([k, v]) => (
-            <div key={k} className="flex justify-between gap-2">
-              <span className="text-gray-400 flex-shrink-0">{k}</span>
-              <span className="text-gray-700 text-right truncate max-w-[140px]">{v}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="grid grid-cols-2 gap-1.5">
-        <button className="py-1.5 rounded-lg bg-green-500 text-white text-[11px] font-medium hover:bg-green-600 transition-colors">Đánh dấu đã xử lý</button>
-        <button className="py-1.5 rounded-lg border border-gray-200 text-gray-600 text-[11px] font-medium hover:bg-gray-50 transition-colors">Giao cho người khác</button>
-        <button className="py-1.5 rounded-lg border border-gray-200 text-gray-600 text-[11px] font-medium hover:bg-gray-50 transition-colors">Bỏ qua</button>
-        <button className="py-1.5 rounded-lg border border-red-200 text-red-500 text-[11px] font-medium hover:bg-red-50 transition-colors">Báo cáo</button>
-      </div>
+            </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function PanelLog() {
-  const d = EVENT_DETAIL;
+function HistoryTab({ historyItems }: { historyItems: HistoryItem[] }) {
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<HistoryStatus | "Tất cả">("Tất cả");
+
+  const filteredHistory = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+
+    return historyItems.filter(item => {
+      const matchesQuery = normalized
+        ? [item.time, item.actor, item.action, item.room, item.note].join(" ").toLowerCase().includes(normalized)
+        : true;
+      const matchesStatus = statusFilter === "Tất cả" || item.result === statusFilter;
+      return matchesQuery && matchesStatus;
+    });
+  }, [historyItems, query, statusFilter]);
+
   return (
     <div className="space-y-4">
-      {/* Processing timeline */}
-      <div>
-        <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Quy trình xử lý</div>
-        <div className="relative space-y-0">
-          {d.timeline.map((t, i) => (
-            <div key={i} className="flex gap-3 relative">
-              {i < d.timeline.length - 1 && (
-                <div className="absolute left-[13px] top-7 bottom-0 w-0.5 bg-gray-100 z-0" />
-              )}
-              <div className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center z-10 mt-0.5 ${t.done ? "bg-green-500" : t.active ? "bg-blue-500" : "bg-gray-200"}`}>
-                {t.done ? <Check size={13} className="text-white" /> : t.active ? <Clock size={13} className="text-white" /> : <div className="w-2 h-2 rounded-full bg-gray-400" />}
-              </div>
-              <div className="pb-4 flex-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[12px] font-semibold text-gray-800">{t.step}</span>
-                  <span className="text-[10px] text-gray-400 font-mono">{t.time}</span>
+      <div className="app-toolbar overflow-hidden">
+        <div className="flex flex-col gap-3 border-b border-slate-200/70 px-4 py-4 dark:border-slate-700/70 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <div className="text-[15px] font-semibold text-slate-900 dark:text-slate-50">Lịch sử xử lý</div>
+            <div className="text-[13px] text-slate-500 dark:text-slate-400">Theo dõi toàn bộ thao tác liên quan đến sự kiện</div>
+          </div>
+          <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
+            <div className="app-toolbar-control flex min-h-10 items-center gap-2 px-3">
+              <Search size={14} className="text-slate-400" />
+              <input
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Tìm người xử lý, lớp học, ghi chú..."
+                className="w-64 bg-transparent text-[12px] outline-none placeholder:text-slate-400"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {["Tất cả", "Hoàn tất", "Chờ xử lý"].map(status => (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setStatusFilter(status as HistoryStatus | "Tất cả")}
+                  className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors ${
+                    statusFilter === status
+                      ? "border-blue-300 bg-blue-50 text-blue-700"
+                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950/10 dark:text-slate-300"
+                  }`}
+                >
+                  {status}
+                </button>
+              ))}
+              <button type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950/10 dark:text-slate-200">
+                <Filter size={13} />
+                Bộ lọc
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-4 py-4">
+          <div className="space-y-0">
+            {filteredHistory.map((item, index) => (
+              <div key={`${item.time}-${index}`} className="relative flex gap-4 pb-4 last:pb-0">
+                {index < filteredHistory.length - 1 ? <div className="absolute left-[18px] top-8 h-full w-px bg-slate-200 dark:bg-slate-700" /> : null}
+
+                <div className="relative z-10 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-200/40">
+                  <FileClock size={15} />
                 </div>
-                <div className="text-[11px] text-gray-500 mt-0.5">{t.by}</div>
-                <div className="text-[11px] text-gray-400 mt-0.5">{t.desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Comment */}
-      <div>
-        <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Ghi chú & hành động</div>
-        <div className="border border-gray-100 rounded-lg p-2.5">
-          <div className="flex items-center gap-2 mb-1.5">
-            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-[10px] font-bold">A</div>
-            <span className="text-[11px] font-medium text-gray-700">{d.comment.user}</span>
-            <span className="text-[10px] text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded">{d.comment.role}</span>
-            <span className="text-[10px] text-gray-400 ml-auto font-mono">{d.comment.time}</span>
+                <div className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950/20">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="text-[14px] font-semibold text-slate-900 dark:text-slate-50">{item.action}</div>
+                    {historyBadge(item.result)}
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-slate-500 dark:text-slate-400">
+                    <span className="font-mono font-medium text-slate-700 dark:text-slate-200">{item.time}</span>
+                    <span>{item.actor}</span>
+                    <span>{item.room}</span>
+                  </div>
+                  <p className="mt-2 text-[14px] leading-6 text-slate-600 dark:text-slate-300">{item.note}</p>
+                </div>
+              </div>
+            ))}
           </div>
-          <p className="text-[11px] text-gray-600 whitespace-pre-line">{d.comment.text}</p>
         </div>
-      </div>
-
-      {/* Attachments */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Tệp đính kèm</div>
-          <button className="text-[11px] text-blue-500 hover:underline">Tải xuống tất cả</button>
-        </div>
-        <div className="grid grid-cols-4 gap-1.5">
-          {d.clips.map((c, i) => (
-            <div key={i} className="rounded overflow-hidden border border-gray-100 relative group cursor-pointer">
-              <img src={c.img} alt="" className="w-full h-[50px] object-cover" />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <Play size={14} className="text-white" />
-              </div>
-              <div className="text-[9px] text-gray-400 text-center py-0.5">{c.dur}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="grid grid-cols-2 gap-1.5">
-        <button className="py-1.5 rounded-lg bg-green-500 text-white text-[11px] font-medium hover:bg-green-600 transition-colors">Đánh dấu đã xử lý</button>
-        <button className="py-1.5 rounded-lg border border-gray-200 text-gray-600 text-[11px] font-medium hover:bg-gray-50 transition-colors">Giao cho người khác</button>
-        <button className="py-1.5 rounded-lg border border-gray-200 text-gray-600 text-[11px] font-medium hover:bg-gray-50 transition-colors">Bỏ qua</button>
-        <button className="py-1.5 rounded-lg border border-red-200 text-red-500 text-[11px] font-medium hover:bg-red-50 transition-colors">Báo cáo</button>
       </div>
     </div>
   );
 }
 
-function RightPanel({ onClose }: { onClose: () => void }) {
-  const [panelTab, setPanelTab] = useState<PanelTab>("info");
-  const PTABS = [
-    { id: "info"  as PanelTab, label: "Thông tin" },
-    { id: "media" as PanelTab, label: "Phương tiện (3)" },
-    { id: "log"   as PanelTab, label: "Lịch sử xử lý (3)" },
-  ];
-  return (
-    <div className="app-surface flex max-h-[calc(100vh-140px)] w-full flex-shrink-0 flex-col self-start overflow-hidden 2xl:w-[280px]">
-      {/* Header */}
-      <div className="flex items-start justify-between px-3 pt-3 pb-2 border-b border-gray-900/15 flex-shrink-0">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-              <Volume2 size={15} className="text-orange-500" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[13px] font-bold text-gray-800 truncate">{EVENT_DETAIL.type}</div>
-              <div className="text-[11px] text-gray-400 truncate">{EVENT_DETAIL.room}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {levelBadge(EVENT_DETAIL.level)}
-            {statusBadge(EVENT_DETAIL.status)}
-          </div>
-        </div>
-        <button onClick={onClose} className="app-icon-btn ml-2 flex-shrink-0">
-          <X size={14} />
-        </button>
-      </div>
-      {/* Tabs */}
-      <div className="flex border-b border-gray-900/15 flex-shrink-0">
-        {PTABS.map(t => (
-          <button key={t.id} onClick={() => setPanelTab(t.id)}
-            className={`flex-1 py-2.5 text-[10px] font-semibold uppercase tracking-wide border-b-2 transition-colors ${panelTab === t.id ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-3">
-        {panelTab === "info"  && <PanelInfo />}
-        {panelTab === "media" && <PanelMedia />}
-        {panelTab === "log"   && <PanelLog />}
-      </div>
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// MAIN PAGE
-// ══════════════════════════════════════════════════════════════════════════════
 export default function EventsPage() {
-  const [mainView, setMainView] = useState<MainView>("list");
-  const [showPanel, setShowPanel] = useState(true);
-
-  const stats = [
-    { label: "Tổng sự kiện",         val: 156, sub: "100%",  color: "text-gray-800",   bg: "bg-blue-50",   icon: "text-blue-500" },
-    { label: "Mức độ cao",           val: 45,  sub: "28.8%", color: "text-red-600",    bg: "bg-red-50",    icon: "text-red-500" },
-    { label: "Mức độ trung bình",    val: 68,  sub: "43.6%", color: "text-orange-500", bg: "bg-orange-50", icon: "text-orange-500" },
-    { label: "Mức độ thấp",          val: 32,  sub: "20.5%", color: "text-blue-600",   bg: "bg-blue-50",   icon: "text-blue-500" },
-    { label: "Đã xử lý",             val: 72,  sub: "46.2%", color: "text-green-600",  bg: "bg-green-50",  icon: "text-green-500" },
-    { label: "Chưa xử lý",           val: 84,  sub: "53.8%", color: "text-yellow-600", bg: "bg-yellow-50", icon: "text-yellow-500" },
-  ];
+  const [tab, setTab] = useState<TabType>("schedule");
+  const [events, setEvents] = useState(EVENTS);
+  const [historyItems, setHistoryItems] = useState(HISTORY);
+  const handledCount = historyItems.filter(item => item.result === "Hoàn tất").length;
+  const pendingCount = historyItems.filter(item => item.result === "Chờ xử lý").length;
 
   return (
     <div className="app-page">
-      {/* Filter bar */}
-      <div className="app-toolbar mb-4 p-3">
-        <div className="flex items-center gap-2">
-          {["Tất cả sự kiện", "Tất cả mức độ", "Tất cả trạng thái"].map(f => (
-            <button key={f} className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] text-gray-600 hover:bg-gray-50 whitespace-nowrap">
-              {f} <ChevronDown size={11} className="text-gray-400" />
-            </button>
-          ))}
-          <div className="flex-1 flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5">
-            <Search size={12} className="text-gray-400 flex-shrink-0" />
-            <input className="flex-1 text-[12px] outline-none placeholder-gray-400 bg-transparent" placeholder="Tìm kiếm sự kiện, phòng, thiết bị..." />
-            <SlidersHorizontal size={12} className="text-gray-400 flex-shrink-0" />
-          </div>
-          <button className="text-[12px] text-blue-500 hover:underline whitespace-nowrap">Xóa bộ lọc</button>
-        </div>
-      </div>
+      <PageHeader tab={tab} setTab={setTab} />
+      {tab !== "schedule" && (
+        <SummaryRow
+          tab={tab}
+          setTab={setTab}
+          eventCount={events.length}
+          handledCount={handledCount}
+          pendingCount={pendingCount}
+        />
+      )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 gap-3 mb-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        {stats.map(s => {
-          const G: Record<string,string> = {
-            "bg-blue-50":   "#4285F4",
-            "bg-red-50":    "#EA4335",
-            "bg-orange-50": "#F29900",
-            "bg-green-50":  "#34A853",
-            "bg-yellow-50": "#FBBC05",
-          };
-          return (
-            <div key={s.label} className="rounded-xl shadow-sm px-3 py-3"
-              style={{ backgroundColor: G[s.bg] ?? "#4285F4" }}>
-              <div className="text-[10px] text-white/70 uppercase tracking-wide mb-1">{s.label}</div>
-              <div className="text-2xl font-bold text-white leading-none">{s.val}</div>
-              <div className="text-[11px] text-white/70 mt-0.5">{s.sub}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* View toggle */}
-      <div className="flex gap-2 mb-4">
-        <button onClick={() => setMainView("list")}
-          className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-colors ${mainView === "list" ? "bg-blue-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
-          Danh sách sự kiện
-        </button>
-        <button onClick={() => setMainView("history")}
-          className={`px-4 py-2 rounded-lg text-[12px] font-medium transition-colors ${mainView === "history" ? "bg-blue-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
-          Lịch sử xử lý
-        </button>
-      </div>
-
-      {/* Content + right panel */}
-      <div className="flex flex-col items-start gap-4 2xl:flex-row">
-        <div className="flex-1 min-w-0">
-          {mainView === "list" && (
-            <>
-              <EventChart />
-              <EventsTable onSelect={() => setShowPanel(true)} />
-            </>
-          )}
-          {mainView === "history" && (
-            <HistoryTable onSelect={() => setShowPanel(true)} />
-          )}
-        </div>
-        {showPanel && <RightPanel onClose={() => setShowPanel(false)} />}
-      </div>
+      {tab === "schedule" && <ScheduleTab />}
+      {tab === "events" && <EventsTab events={events} setEvents={setEvents} setHistoryItems={setHistoryItems} />}
+      {tab === "history" && <HistoryTab historyItems={historyItems} />}
     </div>
   );
 }
-

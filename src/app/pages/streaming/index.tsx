@@ -1,4 +1,5 @@
 ﻿import { type ReactNode, useMemo, useState } from "react";
+import { Link } from "react-router";
 import {
   AlertTriangle,
   ArrowRight,
@@ -18,6 +19,7 @@ import {
   Radio,
   Search,
   Settings,
+  Square,
   Users,
   Video,
   Wifi,
@@ -27,13 +29,15 @@ import { LIVE_STREAMS, PLATFORMS, UPCOMING, VIEWER_TREND } from "../../data/stre
 
 type Stream = typeof LIVE_STREAMS[number];
 type Section = "live" | "create";
+type StatCardColor = "bg-blue-50" | "bg-green-50" | "bg-orange-50" | "bg-purple-50" | "bg-red-50";
 
-const COLORS: Record<string, string> = {
-  red: "#EA4335",
-  blue: "#4285F4",
-  green: "#34A853",
-  orange: "#F29900",
-  slate: "#475569",
+// Kept in sync with the Dashboard status-card palette.
+const STAT_CARD_COLORS: Record<StatCardColor, string> = {
+  "bg-blue-50": "#0147b8",
+  "bg-green-50": "#008000",
+  "bg-orange-50": "#e28103",
+  "bg-purple-50": "#6e0883",
+  "bg-red-50": "#dd1200",
 };
 
 const SIMPLE_PLATFORM_LOGOS: Record<string, SimpleIcon> = {
@@ -53,6 +57,26 @@ const softControlClass =
   "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:hover:bg-slate-800/80";
 const softInputClass =
   "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[13px] text-slate-700 outline-none transition-colors focus:border-blue-300 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:focus:border-blue-400";
+const streamStatusClasses = {
+  live: {
+    badge: "border border-rose-200 bg-rose-50 text-rose-700 shadow-sm dark:border-rose-400/30 dark:bg-rose-500/15 dark:text-rose-200",
+    dot: "bg-rose-500 dark:bg-rose-300",
+  },
+  healthy: "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-200",
+  attention: "border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-200",
+  connected: {
+    text: "text-teal-600 dark:text-teal-300",
+    dot: "bg-teal-500 dark:bg-teal-300",
+  },
+  disconnected: {
+    text: "text-slate-400 dark:text-slate-500",
+    dot: "bg-slate-300 dark:bg-slate-600",
+  },
+  stopped:
+    "border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300",
+  stopAction:
+    "border-[#dd1200]/80 bg-gradient-to-br from-[#dd1200] to-[#bd0f00] text-white shadow-[0_6px_14px_rgba(221,18,0,0.24)] transition-all hover:-translate-y-px hover:from-[#ed2614] hover:to-[#c71000] hover:shadow-[0_8px_18px_rgba(221,18,0,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dd1200]/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950",
+};
 
 function TeamsLogo({ size = 18 }: { size?: number }) {
   return (
@@ -105,16 +129,19 @@ function StatCard({
   label: string;
   value: string | number;
   sub: string;
-  color: keyof typeof COLORS;
+  color: StatCardColor;
 }) {
   return (
-    <div className="rounded-xl px-4 py-3 shadow-sm" style={{ backgroundColor: COLORS[color] }}>
+    <div
+      className="rounded-2xl border border-white/50 px-4 py-3 shadow-[0_10px_24px_rgba(15,23,42,0.10)] ring-1 ring-black/5"
+      style={{ background: `linear-gradient(135deg, ${STAT_CARD_COLORS[color]} 0%, ${STAT_CARD_COLORS[color]}dd 100%)` }}
+    >
       <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/20 text-white">
+        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/20 text-white shadow-inner shadow-white/10">
           {icon}
         </div>
         <div className="min-w-0">
-          <div className="mb-0.5 text-[10px] uppercase tracking-wide text-white/75">{label}</div>
+          <div className="mb-0.5 text-[10px] uppercase tracking-[0.12em] text-white/75">{label}</div>
           <div className="text-2xl font-bold leading-none text-white">{value}</div>
           <div className="mt-0.5 truncate text-[11px] text-white/75">{sub}</div>
         </div>
@@ -125,8 +152,8 @@ function StatCard({
 
 function LiveBadge() {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
-      <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${streamStatusClasses.live.badge}`}>
+      <span className={`h-1.5 w-1.5 rounded-full animate-pulse ${streamStatusClasses.live.dot}`} />
       LIVE
     </span>
   );
@@ -134,9 +161,10 @@ function LiveBadge() {
 
 function HealthBadge({ health }: { health: string }) {
   const attention = health !== "Ổn định";
+  const statusClass = attention ? streamStatusClasses.attention : streamStatusClasses.healthy;
 
   return (
-    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${attention ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"}`}>
+    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClass}`}>
       {health}
     </span>
   );
@@ -192,9 +220,10 @@ function StreamCard({ stream, onStop, isStopped, onOpen }: { stream: Stream; onS
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onStop?.(stream.id); }}
-              className={`flex-shrink-0 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors ${isStopped ? "border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300" : "border-red-600 bg-red-600 text-white hover:bg-red-700 dark:border-red-500 dark:bg-red-500 dark:text-white dark:hover:bg-red-600"}`}
+              className={`inline-flex flex-shrink-0 items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors ${isStopped ? streamStatusClasses.stopped : streamStatusClasses.stopAction}`}
               title={isStopped ? "Đã dừng" : "Dừng live"}
             >
+              {!isStopped && <Square size={9} fill="currentColor" aria-hidden="true" />}
               {isStopped ? "Đã dừng" : "Dừng live"}
             </button>
           </div>
@@ -230,10 +259,11 @@ function StreamRow({ stream, onStop, isStopped, onOpen }: { stream: Stream; onSt
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onStop?.(stream.id); }}
-          className={`rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors ${isStopped ? "border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300" : "border-red-600 bg-red-600 text-white hover:bg-red-700 dark:border-red-500 dark:bg-red-500 dark:text-white dark:hover:bg-red-600"}`}
+          className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors ${isStopped ? streamStatusClasses.stopped : streamStatusClasses.stopAction}`}
           title={isStopped ? "Đã dừng" : "Dừng live"}
         >
-          {isStopped ? "Đã dừng" : "Dừng"}
+              {!isStopped && <Square size={9} fill="currentColor" aria-hidden="true" />}
+              {isStopped ? "Đã dừng" : "Dừng"}
         </button>
       </div>
     </div>
@@ -293,8 +323,8 @@ function ConnectedPlatforms({ compact = false }: { compact?: boolean }) {
               <PlatformMark id={platform.id} size={32} />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[12px] font-bold text-slate-800 dark:text-slate-100">{platform.name}</div>
-                <div className={`flex min-w-0 items-center gap-1 text-[10px] font-semibold ${platform.connected ? "text-green-600 dark:text-green-400" : "text-slate-400 dark:text-slate-500"}`}>
-                  <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${platform.connected ? "bg-green-500" : "bg-slate-300 dark:bg-slate-600"}`} />
+                <div className={`flex min-w-0 items-center gap-1 text-[10px] font-semibold ${platform.connected ? streamStatusClasses.connected.text : streamStatusClasses.disconnected.text}`}>
+                  <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${platform.connected ? streamStatusClasses.connected.dot : streamStatusClasses.disconnected.dot}`} />
                   {platform.connected ? "Đã kết nối" : "Chưa kết nối"}
                 </div>
               </div>
@@ -312,8 +342,8 @@ function ConnectedPlatforms({ compact = false }: { compact?: boolean }) {
               <PlatformMark id={platform.id} size={36} />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[12px] font-bold text-slate-800 dark:text-slate-100">{platform.name}</div>
-                <div className={`flex min-w-0 items-center gap-1 text-[10px] font-semibold ${platform.connected ? "text-green-600 dark:text-green-400" : "text-slate-400 dark:text-slate-500"}`}>
-                  <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${platform.connected ? "bg-green-500" : "bg-slate-300 dark:bg-slate-600"}`} />
+                <div className={`flex min-w-0 items-center gap-1 text-[10px] font-semibold ${platform.connected ? streamStatusClasses.connected.text : streamStatusClasses.disconnected.text}`}>
+                  <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${platform.connected ? streamStatusClasses.connected.dot : streamStatusClasses.disconnected.dot}`} />
                   {platform.connected ? "Đã kết nối" : "Chưa kết nối"}
                 </div>
               </div>
@@ -411,7 +441,7 @@ function CreateLiveSection() {
                       <PlatformMark id={platform.id} size={32} />
                       <span className="min-w-0">
                         <span className="block truncate text-[12px] font-bold text-slate-800 dark:text-slate-100">{platform.name}</span>
-                        <span className={`block text-[10px] font-semibold ${platform.connected ? "text-green-600 dark:text-green-400" : "text-slate-400 dark:text-slate-500"}`}>
+                        <span className={`block text-[10px] font-semibold ${platform.connected ? streamStatusClasses.connected.text : streamStatusClasses.disconnected.text}`}>
                           {platform.connected ? "Sẵn sàng" : "Chưa kết nối"}
                         </span>
                       </span>
@@ -587,9 +617,9 @@ function LiveListSection({ gridView, setGridView, stoppedIds, onStop, onOpen }: 
         <div className="app-surface p-4">
           <div className="mb-3 flex items-center justify-between">
             <div className={`text-[13px] ${panelTitleClass}`}>Lịch phát sắp tới</div>
-            <button className="flex items-center gap-1 text-[12px] font-semibold text-blue-500 hover:underline dark:text-blue-300">
+            <Link to="/events" className="flex items-center gap-1 text-[12px] font-semibold text-blue-500 hover:underline dark:text-blue-300">
               Xem tất cả <ArrowRight size={12} />
-            </button>
+            </Link>
           </div>
           <div className="space-y-2.5">
             {UPCOMING.map(item => (
@@ -632,11 +662,11 @@ export default function StreamingPage() {
   return (
     <div className="app-page">
       <div className="app-grid-stats mb-4">
-        <StatCard icon={<Radio size={18} />} label="Lớp đang live" value={LIVE_STREAMS.length} sub="Đang phát trực tiếp" color="red" />
-        <StatCard icon={<Users size={18} />} label="Người xem" value={totalViewers.toLocaleString("vi-VN")} sub="Tổng người xem hiện tại" color="green" />
-        <StatCard icon={<Wifi size={18} />} label="Nền tảng" value={`${PLATFORMS.filter(item => item.connected).length}/${PLATFORMS.length}`} sub="Sẵn sàng phát" color="blue" />
-        <StatCard icon={<Clock3 size={18} />} label="Sắp tới" value={UPCOMING.length} sub="Phiên đã lên lịch" color="orange" />
-        <StatCard icon={<AlertTriangle size={18} />} label="Cần chú ý" value={attentionCount} sub="Tín hiệu cần kiểm tra" color="slate" />
+        <StatCard icon={<Radio size={18} />} label="Lớp đang live" value={LIVE_STREAMS.length} sub="Đang phát trực tiếp" color="bg-blue-50" />
+        <StatCard icon={<Users size={18} />} label="Người xem" value={totalViewers.toLocaleString("vi-VN")} sub="Tổng người xem hiện tại" color="bg-green-50" />
+        <StatCard icon={<Wifi size={18} />} label="Nền tảng" value={`${PLATFORMS.filter(item => item.connected).length}/${PLATFORMS.length}`} sub="Sẵn sàng phát" color="bg-orange-50" />
+        <StatCard icon={<Clock3 size={18} />} label="Sắp tới" value={UPCOMING.length} sub="Phiên đã lên lịch" color="bg-purple-50" />
+        <StatCard icon={<AlertTriangle size={18} />} label="Cần chú ý" value={attentionCount} sub="Tín hiệu cần kiểm tra" color="bg-red-50" />
       </div>
 
       <div className="app-surface mb-4 overflow-hidden">
